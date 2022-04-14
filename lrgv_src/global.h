@@ -68,9 +68,100 @@ struct Individual {
 //void usage(int argc, char **argv);
 
 #include "lrgv.h"
-#include "lrgv_rand.h"
 #include "Simulation.h"
-extern const vector<string> obj_avail;
-extern const vector<string> constr_avail;
 //void calc_LRGV(Simulation &sim, Individual *ind, char *calc_param);
 #endif
+
+class Input {
+
+public:
+
+Input();
+
+const vector<string> obj_avail;
+const vector<string> constr_avail;
+
+//const vector<string> obj_avail;
+//const vector<string> constr_avail;
+
+year_tracker_structure annual_tracker;
+sims_years_structure sims_years_tracker;
+monthly_tracker_structure monthly_tracker[12];
+
+hydro_structure hydro_sets[12];
+lease_structure lease_sets[12];
+demand_structure demand_sets[12];
+param_structure params;
+
+sampled_data samples[12];
+future_structure futures[12];
+strategy_structure strategy;
+
+super_structure super;
+timer_structure timers;
+drought_structure drought;
+
+global_reporting_structure g;
+
+ofstream time_stream;
+ofstream results_stream;
+ofstream rng_stream;
+ofstream out_stream;
+ofstream monthly_stream;
+
+Simulation simulator;
+
+double start, endtime;
+
+int sampler_count;
+
+double seed[52];
+double oldrand[55];
+int jrand;
+
+void write_results_header(filenames_structure &filenames, string calc_param);
+void write_monthly_header(filenames_structure &filenames);
+void write_monthly_output();
+void hydro_read(string hydro_filename);
+void lease_read(string lease_filename);
+void demand_read(string demand_filename);
+void control_read(filenames_structure &filenames);
+void hist_read(filenames_structure &filenames);
+void general_debug_output (ofstream &out, double **data, int rows, int cols);
+void sets_output_rng_text(ofstream &out, double _current_sim);
+
+void transfer_tracker(double *(&TransferTracker), double AvWater, double Demand);
+
+double resilience_calc();
+double failvol_calc();
+void vulnerability_calc(int local_sims, int local_years);
+void single_sync_sampling();
+void init_LRGV(char** argv, string init_param);
+void transform_LRGV(double* vars);
+void calc_LRGV(double* vars, double* objs, double* consts, string calc_param);
+void finalize_LRGV();
+
+void randsample (const hydro_structure& set, sampled_data& sample, int NumberYears);
+void randsample (const lease_structure& set, sampled_data& sample, int NumberYears);
+void randsample (const demand_structure& set, sampled_data& sample, int NumberYears, double DemGrowthFactor);
+
+double roulette_draw(vector <double> dataset, int *cdf);
+int init_roulette_calcs(string mode, vector <double> &input_data, int *(&output_cdf), int highclassix, int weight);
+void init_roulette();
+void finalize_roulette();
+
+void global_trackers_allocation(int &initial_call);
+
+
+/* Function declarations for the random number generator */
+void randomize(double seed);
+void warmup_random (double seed);
+void advance_random ();
+double randomperc();
+int rnd (int low, int high);
+double rndreal (double low, double high);
+void init_seeds();
+
+};
+
+

@@ -60,38 +60,32 @@ Simulation::~Simulation()
 	//cout << "Destructor out!" << endl;
 }
 
-//Define as std::vector to allow using find
-string arr1[] = {"cost", "surplus", "critrel", "drop", "rel", "cvar", "numleases", "drtranscost", "drvuln","aggcost","aggrel"};
-extern const vector<string> obj_avail (arr1, arr1 + sizeof(arr1) / sizeof(arr1[0]) );
-string arr2[] = {"rel", "critrel", "cvar", "drvuln"};
-extern const vector<string> constr_avail (arr2, arr2 + sizeof(arr2) / sizeof(arr2[0]) );
-
-void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string calc_param)
+void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string calc_param, Input* inp)
 {
 	//increment the global sampler counter and output headers to output streams
-	sampler_count = sampler_count + 1;
+	inp->sampler_count = inp->sampler_count + 1;
 	//note: none of the output routines work for the associated drought structure yet
-	if (params.rng_flag)
+	if (inp->params.rng_flag)
 	{
-		if (params.sync_flag)
+		if (inp->params.sync_flag)
 		{
-			if (sampler_count == 1) rng_stream << "RESULTS_FOR_SAMPLE_" << sampler_count << endl;
+			if (inp->sampler_count == 1) inp->rng_stream << "RESULTS_FOR_SAMPLE_" << inp->sampler_count << endl;
 		}
 		else
 		{
-			if (params.single_flag) //this shouldn't cause problems for now
+			if (inp->params.single_flag) //this shouldn't cause problems for now
 			{
-				if (sampler_count == 1) rng_stream << "RESULTS_FOR_SAMPLE_" << sampler_count << endl;
+				if (inp->sampler_count == 1) inp->rng_stream << "RESULTS_FOR_SAMPLE_" << inp->sampler_count << endl;
 			}
-			else rng_stream << "RESULTS_FOR_SAMPLE_" << sampler_count << endl;
+			else inp->rng_stream << "RESULTS_FOR_SAMPLE_" << inp->sampler_count << endl;
 		}
 			
 	}
-	if (params.out_flag) out_stream << "RESULTS_FOR_SAMPLE_" << sampler_count << endl;
-	if (params.timing_flag)
+	if (inp->params.out_flag) inp->out_stream << "RESULTS_FOR_SAMPLE_" << inp->sampler_count << endl;
+	if (inp->params.timing_flag)
 	{
-		start = clock(); //total time
-		timers.before_loop_start = clock(); //initial stuff
+		inp->start = clock(); //total time
+		inp->timers.before_loop_start = clock(); //initial stuff
 	}
 
  	//obj = ind->obj;
@@ -109,214 +103,214 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 	//constant parameter file has read in the real value if dectransform_flag is zero and nothing needs to be done
 	//if dectransform_flag is one, we have to transform the hard-coded value once at the beginning for each constant parameter
 
-	if(params.mode == "resample") //legacy -- processing_flag 0
+//	if(inp->params.mode == "resample") //legacy -- processing_flag 0
+//	{
+//		inp->strategy.Nrt = rounding(0.5*(vars[0]+1.0)*inp->params.Nrt_max);
+//		Nrt = inp->strategy.Nrt;
+//		//case 1 specific stuff
+//		if (inp->params.model_case == 1)
+//		{
+//			//CASE 1: Permanent Rights Only
+//			lease_flag = 0;
+//			options_flag = 0;
+//			alpha = 0;
+//			beta = 0;
+//			alpha2 = 0;
+//			beta2 = 0;
+//			No = 0;
+//		}
+//		//cases 2 and 3, WRR formulations for Cases B - D
+//		else if (inp->params.model_case == 2 || inp->params.model_case == 3)
+//		{
+//			if (inp->params.model_case == 2) lease_flag = 0;
+//			else lease_flag = 1;
+//
+//			options_flag = 1;
+//
+//			inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+//			inp->strategy.No_high = rounding((1.0 + vars[2])*inp->strategy.No_low);//10-1 fix
+//			inp->strategy.xi = vars[3];
+//
+//			inp->strategy.alpha2 = vars[4];
+//			inp->strategy.beta2 = vars[4]+ vars[5];
+//			if (inp->params.model_case == 3)
+//			{
+//				inp->strategy.alpha = vars[6];
+//				inp->strategy.beta = vars[6] + vars[7];
+//			}
+//		}
+//		//case 4: de novo "simple strategy"
+//		else if (inp->params.model_case == 4)
+//		{
+//			lease_flag = 1;
+//			options_flag = 1;
+//			inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+//			inp->strategy.No_high = inp->strategy.No_low;
+//			inp->strategy.xi = 0.4;
+//			inp->strategy.alpha2 = vars[2];
+//			inp->strategy.beta2 = inp->strategy.alpha2;
+//			inp->strategy.alpha = inp->strategy.alpha2;
+//			inp->strategy.beta = inp->strategy.alpha2; //bug fixed 11/4/2009
+//		}
+//		//case 5: de novo "two alphas"
+//		else if (inp->params.model_case == 5)
+//		{
+//			lease_flag = 1;
+//			options_flag = 1;
+//			inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+//			inp->strategy.No_high = inp->strategy.No_low;
+//			inp->strategy.xi = 0.4;
+//			inp->strategy.alpha2 = vars[2];
+//			inp->strategy.beta2 = inp->strategy.alpha2;
+//			inp->strategy.alpha = vars[3];
+//			inp->strategy.beta = inp->strategy.alpha; //bug fixed 11/4/2009
+//		}
+//		//case 6: de novo "two alphas with betas (no adaptive options)"
+//		else if (inp->params.model_case == 6)
+//		{
+//			lease_flag = 1;
+//			options_flag = 1;
+//			inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+//			inp->strategy.No_high = inp->strategy.No_low;
+//			inp->strategy.xi = 0.4;
+//			inp->strategy.alpha2 = vars[2];
+//			inp->strategy.beta2 = vars[2]+ vars[3];
+//			inp->strategy.alpha = vars[4];
+//			inp->strategy.beta = vars[4] + vars[5];
+//		}
+//		//the last de novo case fully corresponds with the WRR Case D.
+//
+//		//no matter what the case, assign the local alpha and betas here
+//		alpha = inp->strategy.alpha;
+//		beta = inp->strategy.beta;
+//		alpha2 = inp->strategy.alpha2;
+//		beta2 = inp->strategy.beta2;
+//
+//		//moved assignment of high/low options to after this, when ifri has been assigned
+//	} //end code for resampling
+//	else if (inp->params.mode == "sobol") //legacy: processing_flag == 2
+//	{
+//		//do the calculation for rights no matter what the case
+//		if (inp->params.dectransform_flag == 1 && inp->strategy.Nrt_order == inp->params.total_possible_samples && initial_call == 1)
+//			inp->strategy.Nrt = rounding(0.5*(inp->strategy.Nrt+1.0)*inp->params.Nrt_max); //we read constant value once
+//		else if (inp->strategy.Nrt_order < inp->params.total_possible_samples) //sampled param has to get set every time
+//			inp->strategy.Nrt = rounding(0.5*(vars[0]+1.0)*inp->params.Nrt_max);
+//		//There's an implicit else here -- if Nrt was hard-coded, it stays the same and it
+//		Nrt = inp->strategy.Nrt;
+//
+//		//case 1 specific stuff
+//		if (inp->params.model_case == 1)
+//		{
+//			//CASE 1: Permanent Rights Only
+//			lease_flag = 0;
+//			options_flag = 0;
+//			alpha = 0;
+//			beta = 0;
+//			alpha2 = 0;
+//			beta2 = 0;
+//			No = 0;
+//		}
+//		else if (inp->params.model_case == 2 || inp->params.model_case == 3) //changed to elseif on 11/8/10
+//		{
+//			if (inp->params.model_case == 2) lease_flag = 0;
+//			else lease_flag = 1;
+//
+//			options_flag = 1;
+//
+//			if (inp->params.dectransform_flag == 1 && inp->strategy.No_low_order == inp->params.total_possible_samples && initial_call == 1)
+//				inp->strategy.No_low = rounding(inp->strategy.No_low*inp->params.No_max);
+//			else if (inp->strategy.No_low_order < inp->params.total_possible_samples)
+//				inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+//
+//			if (inp->params.dectransform_flag == 1 && inp->strategy.No_high_order == inp->params.total_possible_samples && initial_call == 1)
+//				inp->strategy.No_high = rounding((1.0 + inp->strategy.No_high)*inp->strategy.No_low);
+//			else if (inp->strategy.No_high_order < inp->params.total_possible_samples)
+//				inp->strategy.No_high = rounding((1.0 + vars[2])*inp->strategy.No_low);//10-1 fix
+//
+//			if (inp->strategy.xi_order < inp->params.total_possible_samples) inp->strategy.xi = vars[3];
+//
+//			if (inp->strategy.alpha2_order < inp->params.total_possible_samples)
+//				inp->strategy.alpha2 = vars[4];
+//
+//			// if  you are transforming and "hard-coding" the variables, you need to add the alpha
+//			// to the beta in order to continue...
+//
+//			if (inp->params.dectransform_flag == 1 && inp->strategy.beta2_order == inp->params.total_possible_samples && initial_call == 1)
+//				inp->strategy.beta2 = inp->strategy.alpha2 + inp->strategy.beta2;
+//			else if (inp->strategy.beta2_order < inp->params.total_possible_samples)
+//				inp->strategy.beta2 = inp->strategy.alpha2 + vars[5]; //it is being sampled, but not truncated
+//
+//			//new, 6/5/2009
+//			if (inp->strategy.beta2 > 3.0) inp->strategy.beta2 = 3.0; //the truncation
+//
+//			if (inp->params.model_case == 3)
+//			{
+//				if (inp->strategy.alpha_order < inp->params.total_possible_samples) inp->strategy.alpha = vars[6];
+//
+//				if (inp->params.dectransform_flag == 1 && inp->strategy.beta2_order == inp->params.total_possible_samples && initial_call == 1)
+//					inp->strategy.beta = inp->strategy.alpha + inp->strategy.beta;
+//				else if (inp->strategy.beta_order < inp->params.total_possible_samples)
+//					inp->strategy.beta = inp->strategy.alpha + vars[7]; //sampled not truncated
+//
+//				if (inp->strategy.beta > 3.0) inp->strategy.beta = 3.0; //the truncation
+//			}
+//		//moved the assignment of No to after the ifri is sampled
+//		} //end if (inp->params.model_case == 2 or 3)
+//		else if (inp->params.model_case == 6)
+//		{
+//			lease_flag = 1;
+//			options_flag = 1;
+//
+//			if (inp->params.dectransform_flag == 1 && inp->strategy.No_low_order == inp->params.total_possible_samples && initial_call == 1)
+//				inp->strategy.No_low = rounding(inp->strategy.No_low*inp->params.No_max);
+//			else if (inp->strategy.No_low_order < inp->params.total_possible_samples)
+//				inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+//
+//			inp->strategy.No_high = inp->strategy.No_low;
+//			inp->strategy.xi = 0.4;
+//
+//			if (inp->strategy.alpha2_order < inp->params.total_possible_samples)
+//				inp->strategy.alpha2 = vars[4];
+//
+//			// if  you are transforming and "hard-coding" the variables, you need to add the alpha
+//			// to the beta in order to continue...
+//
+//			if (inp->params.dectransform_flag == 1 && inp->strategy.beta2_order == inp->params.total_possible_samples && initial_call == 1)
+//				inp->strategy.beta2 = inp->strategy.alpha2 + inp->strategy.beta2;
+//			else if (inp->strategy.beta2_order < inp->params.total_possible_samples)
+//				inp->strategy.beta2 = inp->strategy.alpha2 + vars[5]; //it is being sampled, but not truncated
+//
+//			//new, 6/5/2009
+//			if (inp->strategy.beta2 > 3.0) inp->strategy.beta2 = 3.0; //the truncation
+//
+//			if (inp->strategy.alpha_order < inp->params.total_possible_samples) inp->strategy.alpha = vars[6];
+//
+//			if (inp->params.dectransform_flag == 1 && inp->strategy.beta2_order == inp->params.total_possible_samples && initial_call == 1)
+//				inp->strategy.beta = inp->strategy.alpha + inp->strategy.beta;
+//			else if (inp->strategy.beta_order < inp->params.total_possible_samples)
+//				inp->strategy.beta = inp->strategy.alpha + vars[7]; //sampled not truncated
+//
+//			if (inp->strategy.beta > 3.0) inp->strategy.beta = 3.0; //the truncation
+//			//moved the assignment of No to after the ifri is sampled
+//
+//		}
+//		//no matter what the case
+//		alpha = inp->strategy.alpha;
+//		beta = inp->strategy.beta;
+//		alpha2 = inp->strategy.alpha2;
+//		beta2 = inp->strategy.beta2;
+//	} //end processing for sobol
+	if (inp->params.mode == "std-io")
 	{
-		strategy.Nrt = rounding(0.5*(vars[0]+1.0)*params.Nrt_max);
-		Nrt = strategy.Nrt;
-		//case 1 specific stuff
-		if (params.model_case == 1)
-		{
-			//CASE 1: Permanent Rights Only
-			lease_flag = 0;
-			options_flag = 0;
-			alpha = 0;
-			beta = 0;
-			alpha2 = 0;
-			beta2 = 0;
-			No = 0;
-		}
-		//cases 2 and 3, WRR formulations for Cases B - D
-		else if (params.model_case == 2 || params.model_case == 3)
-		{
-			if (params.model_case == 2) lease_flag = 0;
-			else lease_flag = 1;
-
-			options_flag = 1;
-
-			strategy.No_low = rounding(vars[1]*params.No_max);
-			strategy.No_high = rounding((1.0 + vars[2])*strategy.No_low);//10-1 fix
-			strategy.xi = vars[3];
-							
-			strategy.alpha2 = vars[4];
-			strategy.beta2 = vars[4]+ vars[5];
-			if (params.model_case == 3)
-			{
-				strategy.alpha = vars[6];
-				strategy.beta = vars[6] + vars[7];
-			}
-		}
-		//case 4: de novo "simple strategy"
-		else if (params.model_case == 4)
-		{
-			lease_flag = 1;
-			options_flag = 1;
-			strategy.No_low = rounding(vars[1]*params.No_max);
-			strategy.No_high = strategy.No_low;
-			strategy.xi = 0.4;
-			strategy.alpha2 = vars[2];
-			strategy.beta2 = strategy.alpha2;
-			strategy.alpha = strategy.alpha2;
-			strategy.beta = strategy.alpha2; //bug fixed 11/4/2009
-		}
-		//case 5: de novo "two alphas"
-		else if (params.model_case == 5)
-		{
-			lease_flag = 1;
-			options_flag = 1;
-			strategy.No_low = rounding(vars[1]*params.No_max);
-			strategy.No_high = strategy.No_low;
-			strategy.xi = 0.4;
-			strategy.alpha2 = vars[2];
-			strategy.beta2 = strategy.alpha2;
-			strategy.alpha = vars[3];
-			strategy.beta = strategy.alpha; //bug fixed 11/4/2009
-		}
-		//case 6: de novo "two alphas with betas (no adaptive options)"
-		else if (params.model_case == 6)
-		{
-			lease_flag = 1;
-			options_flag = 1;
-			strategy.No_low = rounding(vars[1]*params.No_max);
-			strategy.No_high = strategy.No_low;
-			strategy.xi = 0.4;
-			strategy.alpha2 = vars[2];
-			strategy.beta2 = vars[2]+ vars[3];
-			strategy.alpha = vars[4];
-			strategy.beta = vars[4] + vars[5];
-		}
-		//the last de novo case fully corresponds with the WRR Case D.
-
-		//no matter what the case, assign the local alpha and betas here
-		alpha = strategy.alpha;
-		beta = strategy.beta;
-		alpha2 = strategy.alpha2;
-		beta2 = strategy.beta2;
-		
-		//moved assignment of high/low options to after this, when ifri has been assigned
-	} //end code for resampling
-	else if (params.mode == "sobol") //legacy: processing_flag == 2
-	{
-		//do the calculation for rights no matter what the case
-		if (params.dectransform_flag == 1 && strategy.Nrt_order == params.total_possible_samples && initial_call == 1)
-			strategy.Nrt = rounding(0.5*(strategy.Nrt+1.0)*params.Nrt_max); //we read constant value once
-		else if (strategy.Nrt_order < params.total_possible_samples) //sampled param has to get set every time
-			strategy.Nrt = rounding(0.5*(vars[0]+1.0)*params.Nrt_max);
-		//There's an implicit else here -- if Nrt was hard-coded, it stays the same and it 
-		Nrt = strategy.Nrt;
-
-		//case 1 specific stuff
-		if (params.model_case == 1)
-		{
-			//CASE 1: Permanent Rights Only
-			lease_flag = 0;
-			options_flag = 0;
-			alpha = 0;
-			beta = 0;
-			alpha2 = 0;
-			beta2 = 0;
-			No = 0;
-		}
-		else if (params.model_case == 2 || params.model_case == 3) //changed to elseif on 11/8/10
-		{
-			if (params.model_case == 2) lease_flag = 0;
-			else lease_flag = 1;
-
-			options_flag = 1;
-			
-			if (params.dectransform_flag == 1 && strategy.No_low_order == params.total_possible_samples && initial_call == 1)
-				strategy.No_low = rounding(strategy.No_low*params.No_max);
-			else if (strategy.No_low_order < params.total_possible_samples)
-				strategy.No_low = rounding(vars[1]*params.No_max);
-			
-			if (params.dectransform_flag == 1 && strategy.No_high_order == params.total_possible_samples && initial_call == 1)
-				strategy.No_high = rounding((1.0 + strategy.No_high)*strategy.No_low);
-			else if (strategy.No_high_order < params.total_possible_samples)
-				strategy.No_high = rounding((1.0 + vars[2])*strategy.No_low);//10-1 fix
-			
-			if (strategy.xi_order < params.total_possible_samples) strategy.xi = vars[3];
-			
-			if (strategy.alpha2_order < params.total_possible_samples)			
-				strategy.alpha2 = vars[4];
-			
-			// if  you are transforming and "hard-coding" the variables, you need to add the alpha
-			// to the beta in order to continue...
-
-			if (params.dectransform_flag == 1 && strategy.beta2_order == params.total_possible_samples && initial_call == 1)
-				strategy.beta2 = strategy.alpha2 + strategy.beta2;
-			else if (strategy.beta2_order < params.total_possible_samples)
-				strategy.beta2 = strategy.alpha2 + vars[5]; //it is being sampled, but not truncated
-
-			//new, 6/5/2009
-			if (strategy.beta2 > 3.0) strategy.beta2 = 3.0; //the truncation
-			
-			if (params.model_case == 3)
-			{
-				if (strategy.alpha_order < params.total_possible_samples) strategy.alpha = vars[6];
-				
-				if (params.dectransform_flag == 1 && strategy.beta2_order == params.total_possible_samples && initial_call == 1)
-					strategy.beta = strategy.alpha + strategy.beta;
-				else if (strategy.beta_order < params.total_possible_samples)
-					strategy.beta = strategy.alpha + vars[7]; //sampled not truncated
-
-				if (strategy.beta > 3.0) strategy.beta = 3.0; //the truncation
-			}
-		//moved the assignment of No to after the ifri is sampled
-		} //end if (params.model_case == 2 or 3)
-		else if (params.model_case == 6)
-		{
-			lease_flag = 1;
-			options_flag = 1;
-			
-			if (params.dectransform_flag == 1 && strategy.No_low_order == params.total_possible_samples && initial_call == 1)
-				strategy.No_low = rounding(strategy.No_low*params.No_max);
-			else if (strategy.No_low_order < params.total_possible_samples)
-				strategy.No_low = rounding(vars[1]*params.No_max);
-			
-			strategy.No_high = strategy.No_low;
-			strategy.xi = 0.4;		
-			
-			if (strategy.alpha2_order < params.total_possible_samples)			
-				strategy.alpha2 = vars[4];
-			
-			// if  you are transforming and "hard-coding" the variables, you need to add the alpha
-			// to the beta in order to continue...
-
-			if (params.dectransform_flag == 1 && strategy.beta2_order == params.total_possible_samples && initial_call == 1)
-				strategy.beta2 = strategy.alpha2 + strategy.beta2;
-			else if (strategy.beta2_order < params.total_possible_samples)
-				strategy.beta2 = strategy.alpha2 + vars[5]; //it is being sampled, but not truncated
-
-			//new, 6/5/2009
-			if (strategy.beta2 > 3.0) strategy.beta2 = 3.0; //the truncation
-			
-			if (strategy.alpha_order < params.total_possible_samples) strategy.alpha = vars[6];
-				
-			if (params.dectransform_flag == 1 && strategy.beta2_order == params.total_possible_samples && initial_call == 1)
-				strategy.beta = strategy.alpha + strategy.beta;
-			else if (strategy.beta_order < params.total_possible_samples)
-				strategy.beta = strategy.alpha + vars[7]; //sampled not truncated
-
-			if (strategy.beta > 3.0) strategy.beta = 3.0; //the truncation
-			//moved the assignment of No to after the ifri is sampled
-
-		}
-		//no matter what the case
-		alpha = strategy.alpha;
-		beta = strategy.beta;
-		alpha2 = strategy.alpha2;
-		beta2 = strategy.beta2;
-	} //end processing for sobol
-	else if (params.mode == "std-io")
-	{
-		strategy.Nrt = rounding(0.5*(vars[0]+1.0)*params.Nrt_max);
-		Nrt = strategy.Nrt;
+		inp->strategy.Nrt = rounding(0.5*(vars[0]+1.0)*inp->params.Nrt_max);
+		Nrt = inp->strategy.Nrt;
 		
 		//DEBUG 10-01
 		//cout << "Nrt = " << Nrt << "." << endl;
 		//END DEBUG
 		
 		//case 1 specific stuff
-		if (params.model_case == 1)
+		if (inp->params.model_case == 1)
 		{
 			//CASE 1: Permanent Rights Only
 			lease_flag = 0;
@@ -328,116 +322,116 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			No = 0;
 		}
 		//cases 2 and 3, WRR formulations for Cases B - D
-		else if (params.model_case == 2 || params.model_case == 3)
+		else if (inp->params.model_case == 2 || inp->params.model_case == 3)
 		{
-			if (params.model_case == 2) lease_flag = 0;
+			if (inp->params.model_case == 2) lease_flag = 0;
 			else lease_flag = 1;
 
 			options_flag = 1;
 
-			strategy.No_low = rounding(vars[1]*params.No_max);
-			strategy.No_high = rounding((1.0 + vars[2])*strategy.No_low);//10-1 fix
-			strategy.xi = vars[3];
+			inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+			inp->strategy.No_high = rounding((1.0 + vars[2])*inp->strategy.No_low);//10-1 fix
+			inp->strategy.xi = vars[3];
 						
-			strategy.alpha2 = vars[4];
-			strategy.beta2 = vars[4]+ vars[5];
-			if (params.model_case == 3)
+			inp->strategy.alpha2 = vars[4];
+			inp->strategy.beta2 = vars[4]+ vars[5];
+			if (inp->params.model_case == 3)
 			{
-				strategy.alpha = vars[6];
-				strategy.beta = vars[6] + vars[7];
+				inp->strategy.alpha = vars[6];
+				inp->strategy.beta = vars[6] + vars[7];
 			}
 		}
 	//case 4: de novo "simple strategy"
-		else if (params.model_case == 4)
+		else if (inp->params.model_case == 4)
 		{
 			lease_flag = 1;
 			options_flag = 1;
-			strategy.No_low = rounding(vars[1]*params.No_max);
-			strategy.No_high = strategy.No_low;
-			strategy.xi = 0.4;
-			strategy.alpha2 = vars[2];
-			strategy.beta2 = strategy.alpha2;
-			strategy.alpha = strategy.alpha2;
-			strategy.beta = strategy.alpha2; //bug fixed 11/4/2009
+			inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+			inp->strategy.No_high = inp->strategy.No_low;
+			inp->strategy.xi = 0.4;
+			inp->strategy.alpha2 = vars[2];
+			inp->strategy.beta2 = inp->strategy.alpha2;
+			inp->strategy.alpha = inp->strategy.alpha2;
+			inp->strategy.beta = inp->strategy.alpha2; //bug fixed 11/4/2009
 		}
 		//case 5: de novo "two alphas"
-		else if (params.model_case == 5)
+		else if (inp->params.model_case == 5)
 		{
 			lease_flag = 1;
 			options_flag = 1;
-			strategy.No_low = rounding(vars[1]*params.No_max);
-			strategy.No_high = strategy.No_low;
-			strategy.xi = 0.4;
-			strategy.alpha2 = vars[2];
-			strategy.beta2 = strategy.alpha2;
-			strategy.alpha = vars[3];
-			strategy.beta = strategy.alpha; //bug fixed 11/4/2009
+			inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+			inp->strategy.No_high = inp->strategy.No_low;
+			inp->strategy.xi = 0.4;
+			inp->strategy.alpha2 = vars[2];
+			inp->strategy.beta2 = inp->strategy.alpha2;
+			inp->strategy.alpha = vars[3];
+			inp->strategy.beta = inp->strategy.alpha; //bug fixed 11/4/2009
 		}
 		//case 6: de novo "two alphas with betas (no adaptive options)"
-		else if (params.model_case == 6)
+		else if (inp->params.model_case == 6)
 		{
 			lease_flag = 1;
 			options_flag = 1;
-			strategy.No_low = rounding(vars[1]*params.No_max);
-			strategy.No_high = strategy.No_low;
-			strategy.xi = 0.4;
-			strategy.alpha2 = vars[2];
-			strategy.beta2 = vars[2]+ vars[3];
-			strategy.alpha = vars[4];
-			strategy.beta = vars[4] + vars[5];
+			inp->strategy.No_low = rounding(vars[1]*inp->params.No_max);
+			inp->strategy.No_high = inp->strategy.No_low;
+			inp->strategy.xi = 0.4;
+			inp->strategy.alpha2 = vars[2];
+			inp->strategy.beta2 = vars[2]+ vars[3];
+			inp->strategy.alpha = vars[4];
+			inp->strategy.beta = vars[4] + vars[5];
 		}
 		//the last de novo case fully corresponds with the WRR Case D.
 	
-		alpha = strategy.alpha;
-		beta = strategy.beta;
-		alpha2 = strategy.alpha2;
-		beta2 = strategy.beta2;
+		alpha = inp->strategy.alpha;
+		beta = inp->strategy.beta;
+		alpha2 = inp->strategy.alpha2;
+		beta2 = inp->strategy.beta2;
 		//moved assignment of high/low options to after this, when ifri has been assigned	
 	}
 //DEBUG 10-01
 //cout << "alpha = " << alpha << ", beta =" << beta << ", alpha2 = " << alpha2 << ", beta2 = " << beta2 << endl;
-//cout << "Nolow = " << strategy.No_low << ", Nohigh = " << strategy.No_high << ", xi = " << strategy.xi << "." << endl;
+//cout << "Nolow = " << inp->strategy.No_low << ", Nohigh = " << inp->strategy.No_high << ", xi = " << inp->strategy.xi << "." << endl;
 //END DEBUG
 	/* End Assign Decision Variables */
 
 	/* Do Roulette Calculations */
-	if (params.roulette_flag)
+	if (inp->params.roulette_flag)
 	{
 		//DEBUG 10-01
 //		cout << "Calling roulette." << endl;
 		//END DEBUG
-		init_roulette();
+		inp->init_roulette();
 	}
 	/* End Roulette Calculations */
 
 	/* Assign local parameters */
 
-	critical_reliability_threshold = params.critical_reliability_threshold;
-	DemGrowthFactor = params.DemGrowthFactor;
+	critical_reliability_threshold = inp->params.critical_reliability_threshold;
+	DemGrowthFactor = inp->params.DemGrowthFactor;
 
 	//ifri stuff moved inside Monte Carlo loop
 
-	in_loss = params.in_loss;
-	iRo = params.iRo;
-	OExerciseMonth = params.OExerciseMonth;
-	Po = params.Po;
-	Pr = params.Pr;
-	Px = params.Px;
-	reservoir_threshold = params.reservoir_threshold;
-	ReservoirCriticalLevel = params.ReservoirCriticalLevel;
-	TWR = params.TWR;
+	in_loss = inp->params.in_loss;
+	iRo = inp->params.iRo;
+	OExerciseMonth = inp->params.OExerciseMonth;
+	Po = inp->params.Po;
+	Pr = inp->params.Pr;
+	Px = inp->params.Px;
+	reservoir_threshold = inp->params.reservoir_threshold;
+	ReservoirCriticalLevel = inp->params.ReservoirCriticalLevel;
+	TWR = inp->params.TWR;
 	
 	if (calc_param == "ten-year")
 	{
-		NumberSims = params.NumberSims;
-		NumberYears = params.NumberYears;
+		NumberSims = inp->params.NumberSims;
+		NumberYears = inp->params.NumberYears;
 		single_year = -1;
 		single_flag = 0;
 	}
 	else if (calc_param == "drought_full" || calc_param == "drought_noinit")
 	{
-		NumberSims = drought.NumberSims;
-		NumberYears = drought.NumberYears;
+		NumberSims = inp->drought.NumberSims;
+		NumberYears = inp->drought.NumberYears;
 		single_year = 19;
 		single_flag = 1;
 	}
@@ -484,7 +478,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 
 		/* End declarations, final calculations variables */
 	}
-	global_trackers_allocation(initial_call); //allocate global stuff
+	inp->global_trackers_allocation(initial_call); //allocate global stuff
 
 	/* Begin growing future values */
 
@@ -495,18 +489,18 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		//cout << "Single flag was tripped. Growing demand to year ten for the single year." << endl;
 		//END DEBUG
 		//We only care about Nrt from the strategy, for year ten
-		//annual_tracker.future_Nrt[0] = strategy.Nrt[9];
+		//annual_tracker.future_Nrt[0] = inp->strategy.Nrt[9];
 		//likewise, since the single-year is year 10, the city treats this year like year ten...
 		for (int month_it = 0; month_it < 12; month_it++)
 		{
-			futures[month_it].demand_mean[0] = demand_sets[month_it].mean*pow((1+DemGrowthFactor),9.0);
+			inp->futures[month_it].demand_mean[0] = inp->demand_sets[month_it].mean*pow((1+DemGrowthFactor),9.0);
 		}
 	}
 	else
 	{
 		//for (int year_it = 0; year_it < NumberYears; year_it++)
 		//{
-			//annual_tracker.future_Nrt[year_it] = strategy.Nrt[year_it];
+			//annual_tracker.future_Nrt[year_it] = inp->strategy.Nrt[year_it];
 		//}
 		
 		//Grow future demand ...
@@ -519,7 +513,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			for (int month_it = 0; month_it < 12; month_it++) //loop over months
 			{
 				//We're initializing the variable here.
-				futures[month_it].demand_mean[year_it] = demand_sets[month_it].mean*pow((1+DemGrowthFactor),(double)(year_it));
+				inp->futures[month_it].demand_mean[year_it] = inp->demand_sets[month_it].mean*pow((1+DemGrowthFactor),(double)(year_it));
 				//note: the power in that equation was written as year-1, but since our
 				//indices begin at 0, this turns into the index k
 
@@ -541,7 +535,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 	{
 		for (int month_it = 0; month_it < 12; month_it++)
 		{
-			avg_hist_NW = average_array(hydro_sets[month_it].NW,33);
+			avg_hist_NW = average_array(inp->hydro_sets[month_it].NW,33);
 			//to calculate ENr, we use the average NW value across the
 			//entire historical record for a given month
 
@@ -557,16 +551,16 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			//(the same way the actual allocation is calculated, but this is used
 			//for anticipatory purposes in calculating strategies, etc.)
 
-			futures[month_it].ENr[year_it] = avg_hist_NW*(1-in_loss)*strategy.Nrt/TWR;
+			inp->futures[month_it].ENr[year_it] = avg_hist_NW*(1-in_loss)*inp->strategy.Nrt/TWR;
 		}
 	}
 
 	/* End Growing Future Values */
 
-	if (params.timing_flag)
+	if (inp->params.timing_flag)
 	{
-		timers.before_loop_end = clock();
-		timers.before_loop_sum = timers.before_loop_end - timers.before_loop_start;
+		inp->timers.before_loop_end = clock();
+		inp->timers.before_loop_sum = inp->timers.before_loop_end - inp->timers.before_loop_start;
 	}
 
 	//cout << "initial calls before main loop = " << end << endl;
@@ -596,26 +590,26 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 
 		if (CurrentSim == 0)
 		{
-			timers.monte_carlo_sum = 0.0;
-			timers.calcs_sum = 0.0;
+			inp->timers.monte_carlo_sum = 0.0;
+			inp->timers.calcs_sum = 0.0;
 		}
 
-		if (params.timing_flag) timers.monte_carlo_start = clock();
+		if (inp->params.timing_flag) inp->timers.monte_carlo_start = clock();
 
 		/* Random Sampling Routine */
-		if (params.sync_flag || single_flag) //single_flag is local now
+		if (inp->params.sync_flag || single_flag) //single_flag is local now
 		{
 			for (int year_it = 0; year_it < NumberYears; year_it++)
 			{
 				for (int month_it = 0; month_it < 12; month_it++)
 				{
-					samples[month_it].demand[year_it] = super.y[CurrentSim].samples[month_it].demand[year_it];
-					samples[month_it].inf[year_it] = super.y[CurrentSim].samples[month_it].inf[year_it];
-					samples[month_it].lease_high_res[year_it] = super.y[CurrentSim].samples[month_it].lease_high_res[year_it];
-					samples[month_it].lease_low_res[year_it] = super.y[CurrentSim].samples[month_it].lease_low_res[year_it];
-					samples[month_it].los[year_it] = super.y[CurrentSim].samples[month_it].los[year_it];
+					inp->samples[month_it].demand[year_it] = inp->super.y[CurrentSim].samples[month_it].demand[year_it];
+					inp->samples[month_it].inf[year_it] = inp->super.y[CurrentSim].samples[month_it].inf[year_it];
+					inp->samples[month_it].lease_high_res[year_it] = inp->super.y[CurrentSim].samples[month_it].lease_high_res[year_it];
+					inp->samples[month_it].lease_low_res[year_it] = inp->super.y[CurrentSim].samples[month_it].lease_low_res[year_it];
+					inp->samples[month_it].los[year_it] = inp->super.y[CurrentSim].samples[month_it].los[year_it];
 					//samples[month_it].NW[year_it] = super.y[CurrentSim].samples[month_it].NW[year_it];
-					samples[month_it].res_var[year_it] = super.y[CurrentSim].samples[month_it].res_var[year_it];
+					inp->samples[month_it].res_var[year_it] = inp->super.y[CurrentSim].samples[month_it].res_var[year_it];
 				}
 			}
 		}
@@ -625,9 +619,9 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			//new sample every time!
 			for (int month_it = 0; month_it<12; month_it++)
 			{
-				randsample(hydro_sets[month_it], samples[month_it], NumberYears);
-				randsample(lease_sets[month_it], samples[month_it], NumberYears);
-				randsample(demand_sets[month_it], samples[month_it], NumberYears, DemGrowthFactor);
+				inp->randsample(inp->hydro_sets[month_it], inp->samples[month_it], NumberYears);
+				inp->randsample(inp->lease_sets[month_it], inp->samples[month_it], NumberYears);
+				inp->randsample(inp->demand_sets[month_it], inp->samples[month_it], NumberYears, DemGrowthFactor);
 				//We have: 12 samples structures, one for each month
 				//with enough randomly-sampled values to run
 				//one n-iteration (monte carlo iteration).
@@ -635,28 +629,28 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		}
 
 
-		if (params.rng_flag)
+		if (inp->params.rng_flag)
 		{
-			if (params.sync_flag)
+			if (inp->params.sync_flag)
 			{
-				if(sampler_count == 1)
+				if(inp->sampler_count == 1)
 				{
 					//only output the first set of draws when sync_flag is turned on
 					//(they should all be the same for each solution)
-					sets_output_rng_text(rng_stream, CurrentSim);
+				    inp->sets_output_rng_text(inp->rng_stream, CurrentSim);
 				}
 			}
 			else
 			{
-				if (params.single_flag)
+				if (inp->params.single_flag)
 				{
-					if (sampler_count == 1 && CurrentSim == 0)
-						sets_output_rng_text(rng_stream, CurrentSim);
+					if (inp->sampler_count == 1 && CurrentSim == 0)
+					    inp->sets_output_rng_text(inp->rng_stream, CurrentSim);
 				}
 				else
 				{
 					//output the random values every time
-					sets_output_rng_text(rng_stream, CurrentSim);
+				    inp->sets_output_rng_text(inp->rng_stream, CurrentSim);
 		
 				}
 			}
@@ -665,25 +659,25 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 
 		/* End Random Sampling Routine */
 		
-		if (params.timing_flag) //start timing on calculations
+		if (inp->params.timing_flag) //start timing on calculations
 		{
-			timers.monte_carlo_end = clock();
-			timers.monte_carlo_sum += timers.monte_carlo_end - timers.monte_carlo_start;
-			timers.calcs_start = clock();
+			inp->timers.monte_carlo_end = clock();
+			inp->timers.monte_carlo_sum += inp->timers.monte_carlo_end - inp->timers.monte_carlo_start;
+			inp->timers.calcs_start = clock();
 		}
 		//populate early and late demand
 		for (int year_it = 0; year_it<NumberYears; year_it++)
 		{
-			sims_years_tracker.early_demand[CurrentSim][year_it] = 0.0;
+		    inp->sims_years_tracker.early_demand[CurrentSim][year_it] = 0.0;
 			for (int month_it = 0; month_it<5; month_it++)
 			{
-				sims_years_tracker.early_demand[CurrentSim][year_it] += samples[month_it].demand[year_it];
+			    inp->sims_years_tracker.early_demand[CurrentSim][year_it] += inp->samples[month_it].demand[year_it];
 				//samples[month].demand is the same as DemandList in matlab code
 			}
-			sims_years_tracker.late_demand[CurrentSim][year_it] = 0.0;
+			inp->sims_years_tracker.late_demand[CurrentSim][year_it] = 0.0;
 			for (int month_it = 5; month_it<12; month_it++)
 			{
-				sims_years_tracker.late_demand[CurrentSim][year_it] += samples[month_it].demand[year_it];
+			    inp->sims_years_tracker.late_demand[CurrentSim][year_it] += inp->samples[month_it].demand[year_it];
 			}
 		}
 
@@ -704,12 +698,12 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		{
 			//add in the reading of a parameter here
 
-			//assert(strategy.Nrt);
+			//assert(inp->strategy.Nrt);
 			
 			//hardcode this for the time being...
-			if (params.ifri_dist == "constant")
+			if (inp->params.ifri_dist == "constant")
 			{
-				ifri = params.ifri_param1;
+				ifri = inp->params.ifri_param1;
 			}
 			else
 			{
@@ -717,36 +711,36 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			}
 			
 
-			//params.ifri = ifri;  //don't think this is needed
+			//inp->params.ifri = ifri;  //don't think this is needed
 
-			//ifri = (obj[1]*100000.0)/strategy.Nrt;
-			//params.ifri = ifri; //recording what the calculated initial rights were for output file
+			//ifri = (obj[1]*100000.0)/inp->strategy.Nrt;
+			//inp->params.ifri = ifri; //recording what the calculated initial rights were for output file
 		}
 		else
 		{
 			//Previous code to handle ifri sampling:
-			//if (!params.ifri_high)	ifri = params.ifri; //handles situation where ifri is static
+			//if (!inp->params.ifri_high)	ifri = inp->params.ifri; //handles situation where ifri is static
 			//else
 			//{
 			//	//otherwise,the ifri is sampled
-			//	ifri = rndreal(params.ifri_low, params.ifri_high);
-			//	//params.ifri = ifri; //recording what the sampled initial rights were for output file
+			//	ifri = rndreal(inp->params.ifri_low, inp->params.ifri_high);
+			//	//inp->params.ifri = ifri; //recording what the sampled initial rights were for output file
 			//}
 			//end Previous Code
 
-			if(params.ifri_dist == "constant")
+			if(inp->params.ifri_dist == "constant")
 			{
-				ifri = params.ifri_param1;
+				ifri = inp->params.ifri_param1;
 			}
-			else if(params.ifri_dist == "uniform")
+			else if(inp->params.ifri_dist == "uniform")
 			{
-				ifri = rndreal(params.ifri_param1, params.ifri_param2);
+				ifri = inp->rndreal(inp->params.ifri_param1, inp->params.ifri_param2);
 			}
-			else if(params.ifri_dist == "normal")
+			else if(inp->params.ifri_dist == "normal")
 			{
 				int random_draw;
-				random_draw = rnd(0,49999);
-				ifri = params.initrights_vec[random_draw]; //the input file has a prescribed mean and std
+				random_draw = inp->rnd(0,49999);
+				ifri = inp->params.initrights_vec[random_draw]; //the input file has a prescribed mean and std
 				//DEBUG 10-01
 				//cout << "ifri = " << ifri << endl;
 				//END DEBUG
@@ -760,11 +754,11 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		fri = ifri; //fraction of rights is set to the initial fraction of rights
 		Nro = fri*Nrt;
 		To = Nro; //the total water, at the beginning
-		if (ifri > strategy.xi)
+		if (ifri > inp->strategy.xi)
 		{
-			No = strategy.No_low;
+			No = inp->strategy.No_low;
 		}
-		else No = strategy.No_high;
+		else No = inp->strategy.No_high;
 		//assign water allocation to list...
 		NewMonthAllocationList.clear(); //ensure that the vector is empty (at the beginning of the n-loop)
 		NewMonthAllocationList.push_back(Nro); //this should be the first entry (later, the first entry will be reassigned)
@@ -777,13 +771,13 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		//left from our rights)?  If so, then we expect that we will be allocated the full amount of what
 		//we are allowed.  Otherwise, we will only expect to receive what we expect
 		//to be allocated for the first three months.
-		if ( futures[0].ENr[CurrentYear]+futures[1].ENr[CurrentYear]+futures[2].ENr[CurrentYear]+futures[3].ENr[CurrentYear] > (Nrt-Nro))
+		if ( inp->futures[0].ENr[CurrentYear]+inp->futures[1].ENr[CurrentYear]+inp->futures[2].ENr[CurrentYear]+inp->futures[3].ENr[CurrentYear] > (Nrt-Nro))
 		{
 			ENrt = Nrt-Nro;
 		}
 		else
 		{
-			ENrt = futures[0].ENr[CurrentYear]+futures[1].ENr[CurrentYear]+futures[2].ENr[CurrentYear]+futures[3].ENr[CurrentYear];
+			ENrt = inp->futures[0].ENr[CurrentYear]+inp->futures[1].ENr[CurrentYear]+inp->futures[2].ENr[CurrentYear]+inp->futures[3].ENr[CurrentYear];
 		}
 	
 		Te1 = To + ENrt;
@@ -792,13 +786,13 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		//The initial lease price is based on a december lease price, since the beginning
 		//of the model is from a "previous" December (which is artificial and part of the initial
 		//condition to begin our model)
-		if (CurrentResLevel < reservoir_threshold) P_lease_o = samples[11].lease_low_res[CurrentYear];
-		else P_lease_o = samples[11].lease_high_res[CurrentYear];
+		if (CurrentResLevel < reservoir_threshold) P_lease_o = inp->samples[11].lease_low_res[CurrentYear];
+		else P_lease_o = inp->samples[11].lease_high_res[CurrentYear];
 
-		sims_years_tracker.ToLeasePrice[CurrentSim][CurrentYear] = P_lease_o; //record lease price
+		inp->sims_years_tracker.ToLeasePrice[CurrentSim][CurrentYear] = P_lease_o; //record lease price
 		
 		d1 = 0;
-		for (int month_it=0; month_it<5; month_it++) d1 += futures[month_it].demand_mean[CurrentYear]; //d1 must be early demand
+		for (int month_it=0; month_it<5; month_it++) d1 += inp->futures[month_it].demand_mean[CurrentYear]; //d1 must be early demand
 
 		//note that d1 is calculated based on AVERAGE demand and not demand
 		//which is sampled from the distributions
@@ -853,23 +847,23 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 					
 			if (CurrentYear == 0)
 			{
-				if (ifri > strategy.xi) //changed to local ifri instead of from the params structure
+				if (ifri > inp->strategy.xi) //changed to local ifri instead of from the inp->params structure
 				{
-					No = strategy.No_low;
+					No = inp->strategy.No_low;
 				}
-				else No = strategy.No_high;
+				else No = inp->strategy.No_high;
 			}
 			else if (CurrentYear > 0) //We calculated No for the first year based on ifri (initial condition)
 			{
 				//We will calculate the fro as the AvWater divided by permanent rights
-				if ((AvWaterList[0] / Nrt) > strategy.xi)
+				if ((AvWaterList[0] / Nrt) > inp->strategy.xi)
 				{
-					No = strategy.No_low;
+					No = inp->strategy.No_low;
 				}
-				else No = strategy.No_high;
+				else No = inp->strategy.No_high;
 			}
 
-			sims_years_tracker.No[CurrentSim][CurrentYear] = No;
+			inp->sims_years_tracker.No[CurrentSim][CurrentYear] = No;
 
 			zeroes(AnnualSupplyi, 12);
 
@@ -891,7 +885,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 
 				for (int month_it = allo_it+1; month_it < 11; month_it++) //Calculating over the rest of the year (stops at Nov.)
 				{
-					ExpAlloRestYear[allo_it] += futures[month_it].ENr[CurrentYear];
+					ExpAlloRestYear[allo_it] += inp->futures[month_it].ENr[CurrentYear];
 				}
 
 			}//allo_it for-loop
@@ -902,7 +896,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 
 				for (int month_it = demand_it+1; month_it < 12; month_it++) //Calculating over the rest of year (stops at Dec.)
 				{
-					ExpYearDemand[demand_it] += futures[month_it].demand_mean[CurrentYear];
+					ExpYearDemand[demand_it] += inp->futures[month_it].demand_mean[CurrentYear];
 				}
 			}//demand_it for-loop
 
@@ -925,16 +919,16 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				//assign placeholders from global structures ...
 
 				AvWater = AvWaterList[CurrentMonth]; //the total water we have
-				monthly_tracker[CurrentMonth].av_water[CurrentSim][CurrentYear] = AvWater;
+				inp->monthly_tracker[CurrentMonth].av_water[CurrentSim][CurrentYear] = AvWater;
 				//assign AvWater to a new global list ...
 
 				
 				//Assign the samples to a scalar variable.
-				Inflows = samples[CurrentMonth].inf[CurrentYear];
-				Demand = samples[CurrentMonth].demand[CurrentYear];
-				monthly_tracker[CurrentMonth].random_monthly_demand[CurrentSim][CurrentYear] = Demand;
-				Losses = samples[CurrentMonth].los[CurrentYear];
-				ResVariation = samples[CurrentMonth].res_var[CurrentYear];
+				Inflows = inp->samples[CurrentMonth].inf[CurrentYear];
+				Demand = inp->samples[CurrentMonth].demand[CurrentYear];
+				inp->monthly_tracker[CurrentMonth].random_monthly_demand[CurrentSim][CurrentYear] = Demand;
+				Losses = inp->samples[CurrentMonth].los[CurrentYear];
+				ResVariation = inp->samples[CurrentMonth].res_var[CurrentYear];
 				
 				//"If monthly demand exceeds the available water, register a failure for that month"
 				if (AvWater >= Demand)
@@ -954,7 +948,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 					}
 				}
 				
-				transfer_tracker(TransferTracker, AvWater, Demand);
+				inp->transfer_tracker(TransferTracker, AvWater, Demand);
 
 				//If you didn't use the oldest transfer in the list (the one at the 13th position, index 12)
 				//you have to get rid of it. (and make a note that it was dropped, since a portfolio that
@@ -963,7 +957,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				temp_transfer_sum = sum(TransferTracker,13);
 
 				DroppedTransfers = TransferTracker[12]; //local list
-				monthly_tracker[CurrentMonth].dropped_transfer_tracker[CurrentSim][CurrentYear] = DroppedTransfers; //main list
+				inp->monthly_tracker[CurrentMonth].dropped_transfer_tracker[CurrentSim][CurrentYear] = DroppedTransfers; //main list
 
 				/* End Transfer Section */
 
@@ -974,14 +968,14 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				else CurrentResLevel = OldReservoirLevel + ResVariation;
 		
 				ReservoirList[CurrentMonth] = CurrentResLevel; //local list
-				monthly_tracker[CurrentMonth].res_level_tracker[CurrentSim][CurrentYear] = CurrentResLevel; //global list
+				inp->monthly_tracker[CurrentMonth].res_level_tracker[CurrentSim][CurrentYear] = CurrentResLevel; //global list
 				if (CurrentResLevel < reservoir_threshold)
 				{
-					monthly_tracker[CurrentMonth].res_threshold_tracker[CurrentSim][CurrentYear] = 1;
+					inp->monthly_tracker[CurrentMonth].res_threshold_tracker[CurrentSim][CurrentYear] = 1;
 				}
 				else
 				{
-					monthly_tracker[CurrentMonth].res_threshold_tracker[CurrentSim][CurrentYear] = 0;
+					inp->monthly_tracker[CurrentMonth].res_threshold_tracker[CurrentSim][CurrentYear] = 0;
 				}
 				//calculate new water
 				if ((Inflows - Losses)>0) NewWater = Inflows - Losses;
@@ -1026,7 +1020,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				if(CurrentMonth == 0) NewMonthAllocationList[CurrentMonth] = Nr;
 				else NewMonthAllocationList.push_back(Nr);
 
-				monthly_tracker[CurrentMonth].Nr[CurrentSim][CurrentYear] = Nr;
+				inp->monthly_tracker[CurrentMonth].Nr[CurrentSim][CurrentYear] = Nr;
 
 				AnnualSupplyi[CurrentMonth] = Nr;
 				AnnualNewWateri[CurrentMonth] = NewWater;
@@ -1106,9 +1100,9 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 							//set lease price
 							if (CurrentResLevel < reservoir_threshold)
 							{
-								P_lease = samples[CurrentMonth].lease_low_res[CurrentYear];
+								P_lease = inp->samples[CurrentMonth].lease_low_res[CurrentYear];
 							}
-							else P_lease = samples[CurrentMonth].lease_high_res[CurrentYear];
+							else P_lease = inp->samples[CurrentMonth].lease_high_res[CurrentYear];
 							//end first if-else block
 							
 							//then how much?
@@ -1157,10 +1151,10 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				if (CurrentMonth >= OExerciseMonth && CurrentMonth < 11)
 				{
 					//assign lease price...
-					if (CurrentResLevel < reservoir_threshold)	P_lease = samples[CurrentMonth].lease_low_res[CurrentYear];
-					else P_lease = samples[CurrentMonth].lease_high_res[CurrentYear];
+					if (CurrentResLevel < reservoir_threshold)	P_lease = inp->samples[CurrentMonth].lease_low_res[CurrentYear];
+					else P_lease = inp->samples[CurrentMonth].lease_high_res[CurrentYear];
 		
-					if (CurrentMonth == OExerciseMonth)	sims_years_tracker.Pl5[CurrentSim][CurrentYear] = P_lease;
+					if (CurrentMonth == OExerciseMonth)	inp->sims_years_tracker.Pl5[CurrentSim][CurrentYear] = P_lease;
 
 					if ((NextMonthExpAvWater/ExpYearDemand[CurrentMonth])<= alpha2)
 					{
@@ -1310,7 +1304,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				{
 					//ADDED: Calculate this even for the last year!
 					//track how much water is left at the end of the year
-					sims_years_tracker.end_of_yr_water_tracker[CurrentSim][CurrentYear] = AvWater - DroppedTransfers;
+					inp->sims_years_tracker.end_of_yr_water_tracker[CurrentSim][CurrentYear] = AvWater - DroppedTransfers;
 
 
 					//if it's any year but the very last year...
@@ -1355,7 +1349,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 						{
 							//ENr are values based on historical
 							//NW lists.
-							ENr_temp += futures[month_it].ENr[CurrentYear+1];
+							ENr_temp += inp->futures[month_it].ENr[CurrentYear+1];
 						}
 
 						if (ENr_temp > (Nrt-Nro))
@@ -1376,15 +1370,15 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 						//set the lease price
 						if (CurrentResLevel <= reservoir_threshold)
 						{
-							P_lease_o = samples[11].lease_low_res[CurrentYear+1];
+							P_lease_o = inp->samples[11].lease_low_res[CurrentYear+1];
 						}
-						else P_lease_o = samples[11].lease_high_res[CurrentYear+1];
+						else P_lease_o = inp->samples[11].lease_high_res[CurrentYear+1];
 						//end if-else block
 						
-						sims_years_tracker.ToLeasePrice[CurrentSim][CurrentYear+1] = P_lease_o;
+						inp->sims_years_tracker.ToLeasePrice[CurrentSim][CurrentYear+1] = P_lease_o;
 
 						d1 = 0; //formulation as before
-						for (int month_it=0; month_it<5; month_it++) d1 += futures[month_it].demand_mean[CurrentYear+1];
+						for (int month_it=0; month_it<5; month_it++) d1 += inp->futures[month_it].demand_mean[CurrentYear+1];
 						
 						if (lease_flag)
 						{
@@ -1432,16 +1426,16 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 
 			} //ITERATION MONTH LOOP (indexed by outer_month_it) ends
 
-			sims_years_tracker.early_NW[CurrentSim][CurrentYear] = 0;
+			inp->sims_years_tracker.early_NW[CurrentSim][CurrentYear] = 0;
 			for (int month_it = 0; month_it<5; month_it++)
 			{
-				sims_years_tracker.early_NW[CurrentSim][CurrentYear] += AnnualSupplyi[month_it];
+				inp->sims_years_tracker.early_NW[CurrentSim][CurrentYear] += AnnualSupplyi[month_it];
 			}
 			
-			sims_years_tracker.late_NW[CurrentSim][CurrentYear] = 0;
+			inp->sims_years_tracker.late_NW[CurrentSim][CurrentYear] = 0;
 			for (int month_it = 5; month_it < 12; month_it++)
 			{
-				sims_years_tracker.late_NW[CurrentSim][CurrentYear] += AnnualSupplyi[month_it];
+				inp->sims_years_tracker.late_NW[CurrentSim][CurrentYear] += AnnualSupplyi[month_it];
 			}
 
 		} //ITERATION YEAR LOOP (indexed by outer_year_it) ends
@@ -1458,23 +1452,23 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 
 		for (int year_it = 0; year_it<NumberYears; year_it++)
 		{
-			sims_years_tracker.total_Nx_tracker[CurrentSim][year_it] = NxTracker[year_it];
-			sims_years_tracker.total_Po_list[CurrentSim][year_it] = PoList[year_it];
+			inp->sims_years_tracker.total_Nx_tracker[CurrentSim][year_it] = NxTracker[year_it];
+			inp->sims_years_tracker.total_Po_list[CurrentSim][year_it] = PoList[year_it];
 
 			for (int month_it = 0; month_it<12; month_it++)
 			{
-				monthly_tracker[month_it].yearly_lease_cost[CurrentSim][year_it] = LeaseCost[year_it][month_it];
-				monthly_tracker[month_it].total_monthly_leases[CurrentSim][year_it] = NumberPurchasedLeases[year_it][month_it];
-				monthly_tracker[month_it].total_failures[CurrentSim][year_it] = Failures[year_it][month_it];
-				monthly_tracker[month_it].total_cfailures[CurrentSim][year_it] = CFailures[year_it][month_it];
+				inp->monthly_tracker[month_it].yearly_lease_cost[CurrentSim][year_it] = LeaseCost[year_it][month_it];
+				inp->monthly_tracker[month_it].total_monthly_leases[CurrentSim][year_it] = NumberPurchasedLeases[year_it][month_it];
+				inp->monthly_tracker[month_it].total_failures[CurrentSim][year_it] = Failures[year_it][month_it];
+				inp->monthly_tracker[month_it].total_cfailures[CurrentSim][year_it] = CFailures[year_it][month_it];
 				
 			}//close month_it loop
 
 		}//close year_it loop
-		if (params.timing_flag)
+		if (inp->params.timing_flag)
 		{		
-			timers.calcs_end = clock();
-			timers.calcs_sum += timers.calcs_end - timers.calcs_start;
+			inp->timers.calcs_end = clock();
+			inp->timers.calcs_sum += inp->timers.calcs_end - inp->timers.calcs_start;
 		}
 
 
@@ -1488,7 +1482,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 	
 	if(calc_param == "ten-year" || calc_param == "drought_full")
 	{
-		if (params.timing_flag) timers.obj_start = clock();
+		if (inp->params.timing_flag) inp->timers.obj_start = clock();
 		
 		//
 		//calculate failures
@@ -1502,8 +1496,8 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				temp_sum_cf = 0.0; //for critical failures
 				for (int sims_it = 0; sims_it < NumberSims; sims_it++)
 				{
-					temp_sum_f += monthly_tracker[month_it].total_failures[sims_it][year_it];
-					temp_sum_cf += monthly_tracker[month_it].total_cfailures[sims_it][year_it];
+					temp_sum_f += inp->monthly_tracker[month_it].total_failures[sims_it][year_it];
+					temp_sum_cf += inp->monthly_tracker[month_it].total_cfailures[sims_it][year_it];
 				}
 				temp_mean_f = temp_sum_f / NumberSims;
 				temp_mean_cf = temp_sum_cf / NumberSims;
@@ -1513,10 +1507,10 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			}
 		}
 		
-		if(params.out_flag)
+		if(inp->params.out_flag)
 		{
-			out_stream << "failure_record(years_by_months)" << endl;
-			general_debug_output(out_stream, FailureRecord, NumberYears, 12);
+			inp->out_stream << "failure_record(years_by_months)" << endl;
+			inp->general_debug_output(inp->out_stream, FailureRecord, NumberYears, 12);
 		}
 		
 		for (int year_it = 0; year_it < NumberYears; year_it++)
@@ -1549,16 +1543,16 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				dropped_sum = 0.0;
 				for (int month_it = 0; month_it < 12; month_it++)
 				{
-					dropped_sum += monthly_tracker[month_it].dropped_transfer_tracker[sims_it][year_it];
+					dropped_sum += inp->monthly_tracker[month_it].dropped_transfer_tracker[sims_it][year_it];
 				}
 				YearlyDroppedTransfers[sims_it][year_it] = dropped_sum;
 			}
 		}
 
-		if (params.out_flag)
+		if (inp->params.out_flag)
 		{
-			out_stream << "YearlyDroppedTransfers(sims_by_years)" << endl;
-			general_debug_output(out_stream, YearlyDroppedTransfers, NumberSims, NumberYears);
+			inp->out_stream << "YearlyDroppedTransfers(sims_by_years)" << endl;
+			inp->general_debug_output(inp->out_stream, YearlyDroppedTransfers, NumberSims, NumberYears);
 		}
 
 		for (int year_it = 0; year_it < NumberYears; year_it++)
@@ -1583,23 +1577,23 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				yearly_lease_sum = 0.0;				
 				for (int month_it = 0; month_it < 12; month_it++)
 				{
-					if (monthly_tracker[month_it].total_monthly_leases[sims_it][year_it] > 0)
+					if (inp->monthly_tracker[month_it].total_monthly_leases[sims_it][year_it] > 0)
 					{
 						//increment the counter if there was a lease regardless of volume...
 						number_transfers_sum = number_transfers_sum + 1.0;			
 					}
 					//and sum the volume
-					yearly_lease_sum = yearly_lease_sum + monthly_tracker[month_it].total_monthly_leases[sims_it][year_it];
+					yearly_lease_sum = yearly_lease_sum + inp->monthly_tracker[month_it].total_monthly_leases[sims_it][year_it];
 				}
-				sims_years_tracker.yearly_purchased_leases[sims_it][year_it] = yearly_lease_sum;
+				inp->sims_years_tracker.yearly_purchased_leases[sims_it][year_it] = yearly_lease_sum;
 				YearlyNumberTransfers[sims_it][year_it] = number_transfers_sum;
 			}
 		}
 
-		if (params.out_flag)
+		if (inp->params.out_flag)
 		{
-			out_stream << "YearlyPurchasedLeases(sims_by_years)" << endl;
-			general_debug_output(out_stream, sims_years_tracker.yearly_purchased_leases, NumberSims, NumberYears);
+			inp->out_stream << "YearlyPurchasedLeases(sims_by_years)" << endl;
+			inp->general_debug_output(inp->out_stream, inp->sims_years_tracker.yearly_purchased_leases, NumberSims, NumberYears);
 		}
 		
 		for (int year_it = 0; year_it < NumberYears; year_it++)
@@ -1621,7 +1615,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				for (int sims_it = 0; sims_it < NumberSims; sims_it++)
 				{
 					//Here we're adding all the simulations up per year and month
-					lease_cost_sum += monthly_tracker[month_it].yearly_lease_cost[sims_it][year_it];
+					lease_cost_sum += inp->monthly_tracker[month_it].yearly_lease_cost[sims_it][year_it];
 				}
 				AverageMonthlyLeaseCost[year_it][month_it] = lease_cost_sum / NumberSims;				
 			}
@@ -1636,7 +1630,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				for (int month_it = 0; month_it < 12; month_it++)
 				{
 					//Here, we are taking a sum of all the months, per sims and year
-					lease_cost_sum += monthly_tracker[month_it].yearly_lease_cost[sims_it][year_it];
+					lease_cost_sum += inp->monthly_tracker[month_it].yearly_lease_cost[sims_it][year_it];
 				}
 				TotalYearlyLeaseCost[sims_it][year_it] = lease_cost_sum;
 			}
@@ -1654,8 +1648,8 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				//Exercised Options Cost + LeaseCosts
 				TotalAnnualCosts[sims_it][year_it] = 
 					PermRightCosts[sims_it][year_it] + 
-					sims_years_tracker.No[sims_it][year_it]*sims_years_tracker.total_Po_list[sims_it][year_it] + 
-					sims_years_tracker.total_Nx_tracker[sims_it][year_it]*Px + 
+					inp->sims_years_tracker.No[sims_it][year_it]*inp->sims_years_tracker.total_Po_list[sims_it][year_it] +
+					inp->sims_years_tracker.total_Nx_tracker[sims_it][year_it]*Px +
 					TotalYearlyLeaseCost[sims_it][year_it];
 			}
 		}
@@ -1668,56 +1662,56 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		UltimateTotalAvgCost = sum(AverageAnnualCosts, NumberYears);
 		ObjectiveCost = max_array(AverageAnnualCosts, NumberYears);
 
-		if (params.out_flag)
+		if (inp->params.out_flag)
 		{
 			for (int month_it = 0; month_it < 12; month_it++)
 			{
-				out_stream << "AvWater(sims_by_years)-Month_" << month_it << endl;
-				general_debug_output(out_stream, monthly_tracker[month_it].av_water, NumberSims, NumberYears);
+				inp->out_stream << "AvWater(sims_by_years)-Month_" << month_it << endl;
+				inp->general_debug_output(inp->out_stream, inp->monthly_tracker[month_it].av_water, NumberSims, NumberYears);
 			}
 			for (int month_it = 0; month_it < 12; month_it++)
 			{
-				out_stream << "Nr(sims_by_years)-Month_" << month_it << endl;
-				general_debug_output(out_stream, monthly_tracker[month_it].Nr, NumberSims, NumberYears);
+				inp->out_stream << "Nr(sims_by_years)-Month_" << month_it << endl;
+				inp->general_debug_output(inp->out_stream, inp->monthly_tracker[month_it].Nr, NumberSims, NumberYears);
 			}
 			for (int month_it = 0; month_it < 12; month_it++)
 			{
-				out_stream << "ResLevel(sims_by_years)-Month_" << month_it << endl;
-				general_debug_output(out_stream, monthly_tracker[month_it].res_level_tracker, NumberSims, NumberYears);
+				inp->out_stream << "ResLevel(sims_by_years)-Month_" << month_it << endl;
+				inp->general_debug_output(inp->out_stream, inp->monthly_tracker[month_it].res_level_tracker, NumberSims, NumberYears);
 			}
-			if (params.model_case > 1)
+			if (inp->params.model_case > 1)
 			{
-				out_stream << "No(sims_by_years)" << endl;
-				general_debug_output(out_stream, sims_years_tracker.No, NumberSims, NumberYears);
-				out_stream << "Nx(sims_by_years)" << endl;
-				general_debug_output(out_stream, sims_years_tracker.total_Nx_tracker, NumberSims, NumberYears);
+				inp->out_stream << "No(sims_by_years)" << endl;
+				inp->general_debug_output(inp->out_stream, inp->sims_years_tracker.No, NumberSims, NumberYears);
+				inp->out_stream << "Nx(sims_by_years)" << endl;
+				inp->general_debug_output(inp->out_stream, inp->sims_years_tracker.total_Nx_tracker, NumberSims, NumberYears);
 				for (int month_it = 0; month_it < 12; month_it++)
 				{
-					out_stream << "DroppedTransfers(sims_by_years)-Month_" << month_it << endl;
-					general_debug_output(out_stream, monthly_tracker[month_it].dropped_transfer_tracker, NumberSims, NumberYears);
+					inp->out_stream << "DroppedTransfers(sims_by_years)-Month_" << month_it << endl;
+					inp->general_debug_output(inp->out_stream, inp->monthly_tracker[month_it].dropped_transfer_tracker, NumberSims, NumberYears);
 				}
-				if (params.model_case > 2)
+				if (inp->params.model_case > 2)
 				{
 					for (int month_it = 0; month_it < 12; month_it++)
 					{
-						out_stream << "Nl(sims_by_years)-Month_" << month_it << endl;
-						general_debug_output(out_stream, monthly_tracker[month_it].total_monthly_leases, NumberSims, NumberYears);
+						inp->out_stream << "Nl(sims_by_years)-Month_" << month_it << endl;
+						inp->general_debug_output(inp->out_stream, inp->monthly_tracker[month_it].total_monthly_leases, NumberSims, NumberYears);
 					}
 					for (int month_it = 0; month_it < 12; month_it++)
 					{
-						out_stream << "DroppedTransfers(sims_by_years)-Month_" << month_it << endl;
-						general_debug_output(out_stream, monthly_tracker[month_it].dropped_transfer_tracker, NumberSims, NumberYears);
+						inp->out_stream << "DroppedTransfers(sims_by_years)-Month_" << month_it << endl;
+						inp->general_debug_output(inp->out_stream, inp->monthly_tracker[month_it].dropped_transfer_tracker, NumberSims, NumberYears);
 					}
 					
 				}
 			}
 
-			out_stream << "EndOfYearWater(sims_by_years)" << endl;
-			general_debug_output(out_stream, sims_years_tracker.end_of_yr_water_tracker, NumberSims, NumberYears);
-			out_stream << "TotalAnnualCosts(sims_by_years)" << endl;
-			general_debug_output(out_stream, TotalAnnualCosts, NumberSims, NumberYears);
+			inp->out_stream << "EndOfYearWater(sims_by_years)" << endl;
+			inp->general_debug_output(inp->out_stream, inp->sims_years_tracker.end_of_yr_water_tracker, NumberSims, NumberYears);
+			inp->out_stream << "TotalAnnualCosts(sims_by_years)" << endl;
+			inp->general_debug_output(inp->out_stream, TotalAnnualCosts, NumberSims, NumberYears);
 		
-		}//end if(params.out_flag)
+		}//end if(inp->params.out_flag)
 
 		//
 		// surplus water
@@ -1726,7 +1720,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		EndofYearWaterObjective = 0.0;
 		for (int year_it = 0; year_it < NumberYears; year_it++)
 		{
-			EndofYearWaterObjective = EndofYearWaterObjective + (1/(double)NumberYears)*(average_array_colwise(sims_years_tracker.end_of_yr_water_tracker, NumberSims, NumberYears, year_it));
+			EndofYearWaterObjective = EndofYearWaterObjective + (1/(double)NumberYears)*(average_array_colwise(inp->sims_years_tracker.end_of_yr_water_tracker, NumberSims, NumberYears, year_it));
 		}
 
 		//
@@ -1812,7 +1806,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			//the variable naming in this code for the most part follows the UNC conventions,
 			//so objectives that they may have used would be different than the WRR 2009 variables.
 			//all the variables in the code can be used for analysis though; they are all mostly correct.
-		} //end if(!params.single_flag)
+		} //end if(!inp->params.single_flag)
 
 		//
 		//
@@ -1823,77 +1817,77 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		//NOTE: The wrapper for the epsilon-NSGAII algorithm takes the vars variable passed in through the acb
 		//structure and populates pointers to the the obj and constr vectors for output.  Each variable is calculated
 		//as defined below.
-		if (params.obj_flag)
+		if (inp->params.obj_flag)
 		{
 			//save the untransformed values for use in the aggregation calculation below
 
 			//cout << "Storing full-period metrics for later: " << endl;
 			
-			g.fullperiod_cost = UltimateTotalAvgCost;		//cost
-			g.fullperiod_rel = min_Reliability;				//rel
-			g.fullperiod_crel = min_CReliability;				//crel
-			g.fullperiod_cvar = (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]);	//cvar
+		    inp->g.fullperiod_cost = UltimateTotalAvgCost;		//cost
+		    inp->g.fullperiod_rel = min_Reliability;				//rel
+		    inp->g.fullperiod_crel = min_CReliability;				//crel
+		    inp->g.fullperiod_cvar = (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]);	//cvar
 			
 			//cout << "fullperiodcost = " << g.fullperiod_cost << endl;
 			//cout << "fullperiodrel = " << g.fullperiod_rel << endl;
 			//cout << "fullperiodcrel = " << g.fullperiod_crel << endl;
 			//cout << "fullperiodcvar = " << g.fullperiod_cvar << endl;
 			
-			for (int obj_it = 0; obj_it < (int) params.obj_names.size(); obj_it++)
+			for (int obj_it = 0; obj_it < (int) inp->params.obj_names.size(); obj_it++)
 			{
 				// Possible objectives are defined in obj_avail at top of this file and checked when reading control file
-				if (params.obj_names[obj_it] == "cost")
+				if (inp->params.obj_names[obj_it] == "cost")
 				{
-					objs[obj_it] = UltimateTotalAvgCost / params.obj_scalingfactors[obj_it];
+					objs[obj_it] = UltimateTotalAvgCost / inp->params.obj_scalingfactors[obj_it];
 				}
-				else if (params.obj_names[obj_it] == "surplus")
+				else if (inp->params.obj_names[obj_it] == "surplus")
 				{
-					objs[obj_it] = EndofYearWaterObjective / params.obj_scalingfactors[obj_it];
+					objs[obj_it] = EndofYearWaterObjective / inp->params.obj_scalingfactors[obj_it];
 				}
-				else if (params.obj_names[obj_it] == "critrel")
+				else if (inp->params.obj_names[obj_it] == "critrel")
 				{
 					//9/26/2012: add -1.0 for minimization
-					objs[obj_it] = (-1.0)*min_CReliability / params.obj_scalingfactors[obj_it];
+					objs[obj_it] = (-1.0)*min_CReliability / inp->params.obj_scalingfactors[obj_it];
 				}
-				else if (params.obj_names[obj_it] == "drop")
+				else if (inp->params.obj_names[obj_it] == "drop")
 				{
-					objs[obj_it] = TotalDroppedTransfers / params.obj_scalingfactors[obj_it];
+					objs[obj_it] = TotalDroppedTransfers / inp->params.obj_scalingfactors[obj_it];
 				}
-				else if (params.obj_names[obj_it] == "rel")
+				else if (inp->params.obj_names[obj_it] == "rel")
 				{
 					//9/26/2012: add -1.0 for minimization
-					objs[obj_it] = (-1.0)*min_Reliability / params.obj_scalingfactors[obj_it];
+					objs[obj_it] = (-1.0)*min_Reliability / inp->params.obj_scalingfactors[obj_it];
 				}
-				else if (params.obj_names[obj_it] == "cvar")
+				else if (inp->params.obj_names[obj_it] == "cvar")
 				{
-					objs[obj_it] = (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]) / params.obj_scalingfactors[obj_it];
+					objs[obj_it] = (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]) / inp->params.obj_scalingfactors[obj_it];
 				}
-				else if (params.obj_names[obj_it] == "numleases")
+				else if (inp->params.obj_names[obj_it] == "numleases")
 				{
-					objs[obj_it] = TotalNumberTransfers / params.obj_scalingfactors[obj_it];
+					objs[obj_it] = TotalNumberTransfers / inp->params.obj_scalingfactors[obj_it];
 				}
 			}
 		}
 		
-		if (params.constr_flag)
+		if (inp->params.constr_flag)
 		{
 			int constr_marker = 0;
-			for (int constr_it = 0; constr_it < (int) params.constr_names.size(); constr_it++)
+			for (int constr_it = 0; constr_it < (int) inp->params.constr_names.size(); constr_it++)
 			{
 				//Possible constraints are defined in constr_avail at top of this file and checked when reading control file
 				// first we read which of the constraints we are doing
 				double constr_junk;
-				if (params.constr_names[constr_it] == "rel")
+				if (inp->params.constr_names[constr_it] == "rel")
 				{
 					constr_junk = min_Reliability;
 					constr_marker = 1;
 				}
-				else if (params.constr_names[constr_it] == "critrel")
+				else if (inp->params.constr_names[constr_it] == "critrel")
 				{
 					constr_junk = min_CReliability;
 					constr_marker = 1;
 				}
-				else if (params.constr_names[constr_it] == "cvar")
+				else if (inp->params.constr_names[constr_it] == "cvar")
 				{
 					constr_junk = (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]);
 					constr_marker = 1;
@@ -1908,27 +1902,27 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				if (constr_marker)
 				{
 					//Fixed the constraint problem, 10-03-2012
-					if (params.constr_comparators[constr_it] == ">=")
+					if (inp->params.constr_comparators[constr_it] == ">=")
 					{
-						if (constr_junk >= params.constr_values[constr_it]) consts[constr_it] = 0.0;
+						if (constr_junk >= inp->params.constr_values[constr_it]) consts[constr_it] = 0.0;
 						else
-							consts[constr_it] = constr_junk / params.constr_values[constr_it] - 1.0;
+							consts[constr_it] = constr_junk / inp->params.constr_values[constr_it] - 1.0;
 					}
-					else if (params.constr_comparators[constr_it] == "<=")
+					else if (inp->params.constr_comparators[constr_it] == "<=")
 					{
-						if (constr_junk <= params.constr_values[constr_it]) consts[constr_it] = 0.0;
-						else consts[constr_it] = 1.0 - constr_junk / params.constr_values[constr_it];
+						if (constr_junk <= inp->params.constr_values[constr_it]) consts[constr_it] = 0.0;
+						else consts[constr_it] = 1.0 - constr_junk / inp->params.constr_values[constr_it];
 					}
-					else if (params.constr_comparators[constr_it] == "==")
+					else if (inp->params.constr_comparators[constr_it] == "==")
 					{
-						if (constr_junk == params.constr_values[constr_it]) consts[constr_it] = 0.0;
+						if (constr_junk == inp->params.constr_values[constr_it]) consts[constr_it] = 0.0;
 						else
 						{
 							//9/26/12 fix a divide by zero...
-							if (params.constr_values[constr_it] == 0)
-								consts[constr_it] = -1.0*abs(constr_junk - params.constr_values[constr_it]);
+							if (inp->params.constr_values[constr_it] == 0)
+								consts[constr_it] = -1.0*abs(constr_junk - inp->params.constr_values[constr_it]);
 							else
-								consts[constr_it] = -1.0*abs((constr_junk - params.constr_values[constr_it])/params.constr_values[constr_it]);
+								consts[constr_it] = -1.0*abs((constr_junk - inp->params.constr_values[constr_it])/inp->params.constr_values[constr_it]);
 						}
 					}
 				}
@@ -1942,7 +1936,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		//optimization wrapper).  No scaling factor.
 		//obj[0] = min_Reliability;
 		//Objective 3:  A year is chosen with the maximum CVAR, and the objective is its CVAR value scaled
-		//by its cost.  A scaling factor is also applied. Only valid for params.model_case > 1 
+		//by its cost.  A scaling factor is also applied. Only valid for inp->params.model_case > 1
 		//obj[1] = (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]) / 10;
 		
 		//Objective 0:  UltimateTotalAvgCost defined above, with a scaling factor.
@@ -1955,25 +1949,25 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		//obj[2] = min_CReliability;
 
 		////MODEL CASES above 1 (with options and leases)
-		//if (params.model_case > 1)
+		//if (inp->params.model_case > 1)
 		//{
 
 		//	//Objective 3:  TotalDroppedTransfers defined above, with a scaling factor.
 		//	obj[3] = TotalDroppedTransfers / 1.0e6;
 
 		//	//MODEL CASES above 2 (with leases)
-		//	if (params.model_case > 2)
+		//	if (inp->params.model_case > 2)
 		//	{
 		//		//Objective 4:  TotalNumberTransfers defined above, with a scaling factor.
 		//		obj[4] = TotalNumberTransfers / 100;
 		//	}
 
 		//}
-		if (params.timing_flag)
+		if (inp->params.timing_flag)
 		{
-			timers.obj_end = clock();
+			inp->timers.obj_end = clock();
 
-			timers.obj_sum = timers.obj_end - timers.obj_start;
+			inp->timers.obj_sum = inp->timers.obj_end - inp->timers.obj_start;
 		}
 
 		//constr[0] = min_Reliability / 0.98 - 1.0; //reliability above 98%
@@ -1983,7 +1977,7 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		////in each year.
 		////constr[1] = sum_CReliability / ((double)NumberYears) - 1.0; //100% creliability constraint
 		//constr[1] = min_CReliability / 0.99 - 1.0; //max-min CReliability .. greater than 99%
-		//if (params.model_case > 1)
+		//if (inp->params.model_case > 1)
 		//{
 		//	constr[2] = 1.0 - (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]) / 1.1; //cost variability below 1.1
 		//}
@@ -1997,130 +1991,130 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			zap(varvector, (int)(NumberSims-nthpercentile));
 		}
 
-		if (params.timing_flag) //total time
+		if (inp->params.timing_flag) //total time
 		{
-			time_stream << timers.before_loop_sum << "   " << timers.monte_carlo_sum << "   ";
-			time_stream << timers.calcs_sum << "   " << timers.obj_sum << "   ";
-			endtime = clock() - start;
-			time_stream << endtime << endl;
+		    inp->time_stream << inp->timers.before_loop_sum << "   " << inp->timers.monte_carlo_sum << "   ";
+		    inp->time_stream << inp->timers.calcs_sum << "   " << inp->timers.obj_sum << "   ";
+		    inp->endtime = clock() - inp->start;
+		    inp->time_stream << inp->endtime << endl;
 		}
 
 		//Begin Results Reporting (*.csv file for objectives, and yearly data)
-		if (params.results_flag)
+		if (inp->params.results_flag)
 		{
-			results_stream.setf(ios::fixed);
+		    inp->results_stream.setf(ios::fixed);
 			
 			//see function "d" for the delimiter
 
-			if (params.mode == "resample") //legacy: processing_flag != 2
+			if (inp->params.mode == "resample") //legacy: processing_flag != 2
 			{
-				results_stream << g.alg;
-				results_stream << getDelim << g.config;
-				results_stream << getDelim << g.RS;
-				results_stream << getDelim << g.index << getDelim;
+			    inp->results_stream << inp->g.alg;
+			    inp->results_stream << inp->params.delim << inp->g.config;
+			    inp->results_stream << inp->params.delim << inp->g.RS;
+			    inp->results_stream << inp->params.delim << inp->g.index << inp->params.delim;
 			}
 			
-			results_stream << setprecision(2) << UltimateTotalAvgCost;
+			inp->results_stream << setprecision(2) << UltimateTotalAvgCost;
 			if (calc_param == "drought_full")
 			{
 				//Calculate Drought Transfers Cost
 				double drtranscost = 0.0;
 				for (int month_it = 0; month_it < 12; month_it++)
 				{
-					drtranscost += monthly_tracker[month_it].yearly_lease_cost[0][0];
+					drtranscost += inp->monthly_tracker[month_it].yearly_lease_cost[0][0];
 				}
-				drtranscost += sims_years_tracker.total_Nx_tracker[0][0]*Px;
-				results_stream << getDelim << setprecision(2) << drtranscost;
+				drtranscost += inp->sims_years_tracker.total_Nx_tracker[0][0]*Px;
+				inp->results_stream << inp->params.delim << setprecision(2) << drtranscost;
 			}
-			results_stream << getDelim << setprecision(6) << min_Reliability;
-			results_stream << getDelim << setprecision(6) << min_CReliability;
-			results_stream << getDelim << setprecision(1) << EndofYearWaterObjective;
+			inp->results_stream << inp->params.delim << setprecision(6) << min_Reliability;
+			inp->results_stream << inp->params.delim << setprecision(6) << min_CReliability;
+			inp->results_stream << inp->params.delim << setprecision(1) << EndofYearWaterObjective;
 
-			if (params.model_case > 1)
+			if (inp->params.model_case > 1)
 			{
-				results_stream << getDelim;
-				results_stream << setprecision(6);
-				results_stream << (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]);
-				results_stream << getDelim << scientific << setprecision(6) << TotalDroppedTransfers;
-				if (params.model_case > 2)
+			    inp->results_stream << inp->params.delim;
+			    inp->results_stream << setprecision(6);
+			    inp->results_stream << (max_array(CVAR, NumberYears) / AverageAnnualCosts[max_index_array(CVAR, NumberYears)]);
+			    inp->results_stream << inp->params.delim << scientific << setprecision(6) << TotalDroppedTransfers;
+				if (inp->params.model_case > 2)
 				{
-					results_stream << getDelim << fixed << setprecision(6) << TotalNumberTransfers;
+					inp->results_stream << inp->params.delim << fixed << setprecision(6) << TotalNumberTransfers;
 				}
 			}
-			results_stream << setprecision(6);
-			double temp = resilience_calc();
+			inp->results_stream << setprecision(6);
+			double temp = inp->resilience_calc();
 
-			results_stream << getDelim << resilience_calc();
-			results_stream << getDelim << failvol_calc();
-			vulnerability_calc(params.NumberSims, params.NumberYears);
-			results_stream << getDelim << g.vulnerability << getDelim << g.failure_periods;
+			inp->results_stream << inp->params.delim << inp->resilience_calc();
+			inp->results_stream << inp->params.delim << inp->failvol_calc();
+			inp->vulnerability_calc(inp->params.NumberSims, inp->params.NumberYears);
+			inp->results_stream << inp->params.delim << inp->g.vulnerability << inp->params.delim << inp->g.failure_periods;
 
 			//03-16-2015: These variables are not valid anymore, took them out of reporting
-			//results_stream << getDelim << constr[0] << getDelim << constr[1];
-		//	if (params.model_case > 1) results_stream << getDelim << constr[2] ;
+			//inp->results_stream << inp->params.delim << constr[0] << inp->params.delim << constr[1];
+		//	if (inp->params.model_case > 1) inp->results_stream << inp->params.delim << constr[2] ;
 
-			//results_stream << getDelim << params.ifri;
+			//inp->results_stream << inp->params.delim << inp->params.ifri;
 
-			results_stream << getDelim << setprecision(0) << strategy.Nrt;
-			if (params.model_case > 1)
+			inp->results_stream << inp->params.delim << setprecision(0) << inp->strategy.Nrt;
+			if (inp->params.model_case > 1)
 			{
-				results_stream << getDelim << setprecision(3) << strategy.xi;
-				results_stream << getDelim << setprecision(0) << strategy.No_low;
-				results_stream << getDelim << setprecision(0) << strategy.No_high;
-				results_stream << getDelim << setprecision(6) << strategy.alpha2;
-				results_stream << getDelim << setprecision(6) << strategy.beta2;
-				if (params.model_case > 2)
+			    inp->results_stream << inp->params.delim << setprecision(3) << inp->strategy.xi;
+			    inp->results_stream << inp->params.delim << setprecision(0) << inp->strategy.No_low;
+			    inp->results_stream << inp->params.delim << setprecision(0) << inp->strategy.No_high;
+			    inp->results_stream << inp->params.delim << setprecision(6) << inp->strategy.alpha2;
+			    inp->results_stream << inp->params.delim << setprecision(6) << inp->strategy.beta2;
+				if (inp->params.model_case > 2)
 				{
-					results_stream << getDelim << strategy.alpha << getDelim << strategy.beta;
+				    inp->results_stream << inp->params.delim << inp->strategy.alpha << inp->params.delim << inp->strategy.beta;
 				}
 			}
 
-			results_stream << getDelim << ifri;
+			inp->results_stream << inp->params.delim << ifri;
 
-			results_stream << setprecision(6); //just to make sure the order doesn't change later and this gets ignored
+			inp->results_stream << setprecision(6); //just to make sure the order doesn't change later and this gets ignored
 
-			for (int year_it = 0; year_it < NumberYears; year_it++) results_stream << getDelim << Reliability[year_it];
-			results_stream << getDelim << average_array(Reliability, params.NumberYears);
+			for (int year_it = 0; year_it < NumberYears; year_it++) inp->results_stream << inp->params.delim << Reliability[year_it];
+			inp->results_stream << inp->params.delim << average_array(Reliability, inp->params.NumberYears);
 
-			for (int year_it = 0; year_it < NumberYears; year_it++) results_stream << getDelim << CReliability[year_it];
-			results_stream << getDelim << average_array(CReliability, params.NumberYears);
+			for (int year_it = 0; year_it < NumberYears; year_it++) inp->results_stream << inp->params.delim << CReliability[year_it];
+			inp->results_stream << inp->params.delim << average_array(CReliability, inp->params.NumberYears);
 
-			if (params.model_case > 1){
-				results_stream << setprecision(1);
-				for (int year_it = 0; year_it < NumberYears; year_it++) results_stream << getDelim << DroppedTransfersVector[year_it];
-				results_stream << getDelim << average_array(DroppedTransfersVector, params.NumberYears);
+			if (inp->params.model_case > 1){
+				inp->results_stream << setprecision(1);
+				for (int year_it = 0; year_it < NumberYears; year_it++) inp->results_stream << inp->params.delim << DroppedTransfersVector[year_it];
+				inp->results_stream << inp->params.delim << average_array(DroppedTransfersVector, inp->params.NumberYears);
 			}
 
-			results_stream << setprecision(2);
-			for (int year_it = 0; year_it < NumberYears; year_it++) results_stream << getDelim << AverageAnnualCosts[year_it];
-			results_stream << getDelim << average_array(AverageAnnualCosts, params.NumberYears);
+			inp->results_stream << setprecision(2);
+			for (int year_it = 0; year_it < NumberYears; year_it++) inp->results_stream << inp->params.delim << AverageAnnualCosts[year_it];
+			inp->results_stream << inp->params.delim << average_array(AverageAnnualCosts, inp->params.NumberYears);
 
-			results_stream << setprecision(2);
-			for (int year_it = 0; year_it < NumberYears; year_it++) results_stream << getDelim << AverageYearlyLeaseCost[year_it];
-			results_stream << getDelim << average_array(AverageYearlyLeaseCost, params.NumberYears);
+			inp->results_stream << setprecision(2);
+			for (int year_it = 0; year_it < NumberYears; year_it++) inp->results_stream << inp->params.delim << AverageYearlyLeaseCost[year_it];
+			inp->results_stream << inp->params.delim << average_array(AverageYearlyLeaseCost, inp->params.NumberYears);
 
-			results_stream << setprecision(4);
-			results_stream << getDelim << PermRightCosts[0][0]/average_array(AverageAnnualCosts, params.NumberYears);
-			if (params.model_case > 1)
+			inp->results_stream << setprecision(4);
+			inp->results_stream << inp->params.delim << PermRightCosts[0][0]/average_array(AverageAnnualCosts, inp->params.NumberYears);
+			if (inp->params.model_case > 1)
 			{
 				temp_double = 0.0;
 				for (int sims_it = 0; sims_it < NumberSims; sims_it++)
 				{
 					for (int year_it = 0; year_it < NumberYears; year_it++)
 					{
-						temp_double += sims_years_tracker.No[sims_it][year_it]*sims_years_tracker.total_Po_list[sims_it][year_it]+
-							sims_years_tracker.total_Nx_tracker[sims_it][year_it]*Px;
+						temp_double += inp->sims_years_tracker.No[sims_it][year_it]*inp->sims_years_tracker.total_Po_list[sims_it][year_it]+
+							inp->sims_years_tracker.total_Nx_tracker[sims_it][year_it]*Px;
 					}
 				}
-				results_stream << getDelim << temp_double / (NumberSims*NumberYears*average_array(AverageAnnualCosts, params.NumberYears));
-				if (params.model_case > 2)
+				inp->results_stream << inp->params.delim << temp_double / (NumberSims*NumberYears*average_array(AverageAnnualCosts, inp->params.NumberYears));
+				if (inp->params.model_case > 2)
 				{
-					results_stream << getDelim << average_array(AverageYearlyLeaseCost, params.NumberYears)/average_array(AverageAnnualCosts, params.NumberYears);
+					inp->results_stream << inp->params.delim << average_array(AverageYearlyLeaseCost, inp->params.NumberYears)/average_array(AverageAnnualCosts, inp->params.NumberYears);
 				}
 			}		
 
 			results_sum = 0.0;
-			if (params.model_case > 1)
+			if (inp->params.model_case > 1)
 			{
 				for (int year_it = 0; year_it < NumberYears; year_it++)
 				{
@@ -2129,18 +2123,18 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 					highlow_error = 0;
 					for (int sims_it = 0; sims_it < NumberSims; sims_it++)
 					{
-						if (sims_years_tracker.No[sims_it][year_it] == strategy.No_high) high_count++;
-						else if (sims_years_tracker.No[sims_it][year_it] == strategy.No_low) low_count++;
+						if (inp->sims_years_tracker.No[sims_it][year_it] == inp->strategy.No_high) high_count++;
+						else if (inp->sims_years_tracker.No[sims_it][year_it] == inp->strategy.No_low) low_count++;
 						else highlow_error++;
 					}
 
-					if ((high_count + low_count) != NumberSims) results_stream << ",counting_error";
-					else if (highlow_error) results_stream << ",highlow_error";
-					else results_stream << getDelim << high_count;
+					if ((high_count + low_count) != NumberSims) inp->results_stream << ",counting_error";
+					else if (highlow_error) inp->results_stream << ",highlow_error";
+					else inp->results_stream << inp->params.delim << high_count;
 					results_sum = results_sum + (double) high_count;
 					
 				} // end up year loop for high/low options count
-				results_stream << getDelim << (1/((double) params.NumberYears))*results_sum;
+				inp->results_stream << inp->params.delim << (1/((double) inp->params.NumberYears))*results_sum;
 
 				results_sum = 0.0;
 
@@ -2152,70 +2146,70 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 					highlow_error = 0;
 					for (int sims_it = 0; sims_it < NumberSims; sims_it++)
 					{
-						if (sims_years_tracker.total_Nx_tracker[sims_it][year_it] > 0) high_count++;
-						else if (sims_years_tracker.total_Nx_tracker[sims_it][year_it] == 0) low_count++;
+						if (inp->sims_years_tracker.total_Nx_tracker[sims_it][year_it] > 0) high_count++;
+						else if (inp->sims_years_tracker.total_Nx_tracker[sims_it][year_it] == 0) low_count++;
 						else highlow_error++;
 					}
 
-					if ((high_count + low_count) != NumberSims) results_stream << ",counting_error";
-					else if (highlow_error) results_stream << ",highlow_error";
-					else results_stream << getDelim << high_count;
+					if ((high_count + low_count) != NumberSims) inp->results_stream << ",counting_error";
+					else if (highlow_error) inp->results_stream << ",highlow_error";
+					else inp->results_stream << inp->params.delim << high_count;
 					
 					results_sum = results_sum + (double) high_count;
 
 				}// end year loop for Nx count
-				results_stream << getDelim << (1/((double) params.NumberYears))*results_sum;
+				inp->results_stream << inp->params.delim << (1/((double) inp->params.NumberYears))*results_sum;
 				
 				results_sum = 0.0;
 
 				for (int year_it = 0; year_it < NumberYears; year_it++)
 				{
-					temp_double = average_array_colwise(sims_years_tracker.total_Nx_tracker, NumberSims, NumberYears, year_it);
-					results_stream << getDelim << temp_double;
+					temp_double = average_array_colwise(inp->sims_years_tracker.total_Nx_tracker, NumberSims, NumberYears, year_it);
+					inp->results_stream << inp->params.delim << temp_double;
 					results_sum = results_sum + temp_double;
 				}
-				results_stream << getDelim << (1/((double) params.NumberYears))*results_sum;
+				inp->results_stream << inp->params.delim << (1/((double) inp->params.NumberYears))*results_sum;
 
 				results_sum = 0.0;
 
-				if (params.model_case > 2)
+				if (inp->params.model_case > 2)
 				{
 					for (int year_it = 0; year_it < NumberYears; year_it++)
 					{
-						temp_double = average_array_colwise(sims_years_tracker.yearly_purchased_leases, NumberSims, NumberYears, year_it);
-						results_stream << getDelim << temp_double;
+						temp_double = average_array_colwise(inp->sims_years_tracker.yearly_purchased_leases, NumberSims, NumberYears, year_it);
+						inp->results_stream << inp->params.delim << temp_double;
 						results_sum = results_sum + temp_double;
 					}
-					results_stream << getDelim << (1/((double) params.NumberYears))*results_sum;
+					inp->results_stream << inp->params.delim << (1/((double) inp->params.NumberYears))*results_sum;
 
 					results_sum = 0.0;
 				}
-			} //end if params.model_case > 1
+			} //end if inp->params.model_case > 1
 
 			results_sum = 0.0;
 			for (int year_it = 0; year_it < NumberYears; year_it++)
 			{
-				temp_double = average_array_colwise(sims_years_tracker.end_of_yr_water_tracker, NumberSims, NumberYears, year_it);
-				results_stream << getDelim << temp_double;
+				temp_double = average_array_colwise(inp->sims_years_tracker.end_of_yr_water_tracker, NumberSims, NumberYears, year_it);
+				inp->results_stream << inp->params.delim << temp_double;
 				results_sum = results_sum + temp_double;
 			}
-			results_stream << getDelim << (1/((double) params.NumberYears))*results_sum;
+			inp->results_stream << inp->params.delim << (1/((double) inp->params.NumberYears))*results_sum;
 			results_sum = 0.0;
 
 			//This is also a fix to ensure that the Sobol results print correctly
 			//In the ten-year Sobol, we aren't running the concurrent drought simulation,
 			//so we need a new line here...
 			//9/21/2012 Removed preprocessor definition here.
-			if (params.mode == "sobol" || params.sync_flag) results_stream << endl; //legacy: first part was processing_flag == 2
+			if (inp->params.mode == "sobol" || inp->params.sync_flag) inp->results_stream << endl; //legacy: first part was processing_flag == 2
 			
 			//On 3/23/2015 the BAND-AID fixes continue.  Almost all applications of the
 			//LRGV use the 'combined' calculation mode, and for this, the drought will
 			//put out its own metrics.  Therefore we will comment this out, and allow the drought
 			//to continue putting out stuff.
-			//if (params.mode == "std-io") results_stream << endl;
-		} // end if params.results_flag
+			//if (inp->params.mode == "std-io") inp->results_stream << endl;
+		} // end if inp->params.results_flag
 		//End Results Reporting
-		if (params.monthly_flag) write_monthly_output();
+		if (inp->params.monthly_flag) inp->write_monthly_output();
 	} //end, if the calc_param is ten year or drought full.
 	
 	//
@@ -2241,53 +2235,53 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 		double drtranscost = 0.0;
 		for (int month_it = 0; month_it < 12; month_it++)
 		{
-			drtranscost += monthly_tracker[month_it].yearly_lease_cost[0][0];
+			drtranscost += inp->monthly_tracker[month_it].yearly_lease_cost[0][0];
 		}
-		drtranscost += sims_years_tracker.total_Nx_tracker[0][0]*Px;
+		drtranscost += inp->sims_years_tracker.total_Nx_tracker[0][0]*Px;
 
 		//Calculate Vulnerability
-		vulnerability_calc(1, 1);
+		inp->vulnerability_calc(1, 1);
 
 		//Assign Objectives and Constraints
-		if (params.obj_flag)
+		if (inp->params.obj_flag)
 		{
 		        //Possible objectives are defined in obj_avail at top of this file and checked when reading control file
-			for (int obj_it = 0; obj_it < (int) params.obj_names.size(); obj_it++)
+			for (int obj_it = 0; obj_it < (int) inp->params.obj_names.size(); obj_it++)
 			{
-				if (params.obj_names[obj_it] == "drtranscost")
-					objs[obj_it] = drtranscost / params.obj_scalingfactors[obj_it];
-				else if (params.obj_names[obj_it] == "drvuln")
-					objs[obj_it] = g.vulnerability / params.obj_scalingfactors[obj_it];
-				else if (params.obj_names[obj_it] == "aggcost")
+				if (inp->params.obj_names[obj_it] == "drtranscost")
+					objs[obj_it] = drtranscost / inp->params.obj_scalingfactors[obj_it];
+				else if (inp->params.obj_names[obj_it] == "drvuln")
+					objs[obj_it] = inp->g.vulnerability / inp->params.obj_scalingfactors[obj_it];
+				else if (inp->params.obj_names[obj_it] == "aggcost")
 				{
 					//cout << "cost, cvar, and drcost are: " << endl;
-					//cout << g.fullperiod_cost << "," << g.fullperiod_cvar << "," << drtranscost << "." << endl;
+					//cout << inp->g.fullperiod_cost << "," << inp->g.fullperiod_cvar << "," << drtranscost << "." << endl;
 					objs[obj_it] = 
-						g.fullperiod_cost/100000000.0 +
-						g.fullperiod_cvar/10.0 +
+						inp->g.fullperiod_cost/100000000.0 +
+						inp->g.fullperiod_cvar/10.0 +
 						drtranscost/10000000.0;
 				}
-				else if (params.obj_names[obj_it] == "aggrel")
+				else if (inp->params.obj_names[obj_it] == "aggrel")
 				{
 					//cout << "rel, crel, and drrel are: " << endl;
-					//cout << g.fullperiod_rel << "," << g.fullperiod_crel << "," << (12.0 - double(g.total_periods))/12.0 << "." << endl;									
+					//cout << inp->g.fullperiod_rel << "," << inp->g.fullperiod_crel << "," << (12.0 - double(inp->g.total_periods))/12.0 << "." << endl;
 					//9/26/2012: add -1.0 for minimization
 					objs[obj_it] =
-						(-1.0)*(g.fullperiod_rel + g.fullperiod_crel + (12.0 - double(g.total_periods))/12.0)/3.0;
+						(-1.0)*(inp->g.fullperiod_rel + inp->g.fullperiod_crel + (12.0 - double(inp->g.total_periods))/12.0)/3.0;
 				}
 			}
 		}
 
-		if (params.constr_flag)
+		if (inp->params.constr_flag)
 		{
                         //Possible constraints are defined in constr_avail at top of this file and checked when reading control file
 			int constr_marker = 0;
-			for (int constr_it = 0; constr_it < (int) params.constr_names.size(); constr_it++)
+			for (int constr_it = 0; constr_it < (int) inp->params.constr_names.size(); constr_it++)
 			{
 				double constr_junk;
-				if (params.constr_names[constr_it] == "drvuln")
+				if (inp->params.constr_names[constr_it] == "drvuln")
 				{
-					constr_junk = g.vulnerability;
+					constr_junk = inp->g.vulnerability;
 					constr_marker = 1;
 				}
 				else
@@ -2303,32 +2297,32 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 				if (constr_marker)
 				{
 					//fixed constraints, 10-03-12
-					if (params.constr_comparators[constr_it] == ">=")
+					if (inp->params.constr_comparators[constr_it] == ">=")
 					{
-						if (constr_junk >= params.constr_values[constr_it]) consts[constr_it] = 0.0;
+						if (constr_junk >= inp->params.constr_values[constr_it]) consts[constr_it] = 0.0;
 						else
-							consts[constr_it] = constr_junk / params.constr_values[constr_it] - 1.0;
+							consts[constr_it] = constr_junk / inp->params.constr_values[constr_it] - 1.0;
 					}
-					else if (params.constr_comparators[constr_it] == "<=")
+					else if (inp->params.constr_comparators[constr_it] == "<=")
 					{
-						if (constr_junk <= params.constr_values[constr_it]) consts[constr_it] = 0.0;
-						else consts[constr_it] = 1.0 - constr_junk / params.constr_values[constr_it];
+						if (constr_junk <= inp->params.constr_values[constr_it]) consts[constr_it] = 0.0;
+						else consts[constr_it] = 1.0 - constr_junk / inp->params.constr_values[constr_it];
 					}
-					else if (params.constr_comparators[constr_it] == "==")
+					else if (inp->params.constr_comparators[constr_it] == "==")
 					{
-						if (constr_junk == params.constr_values[constr_it]) consts[constr_it] = 0.0;
+						if (constr_junk == inp->params.constr_values[constr_it]) consts[constr_it] = 0.0;
 						else
 						{
 							//9/26/12 fix a divide by zero...
-							if (params.constr_values[constr_it] == 0)
+							if (inp->params.constr_values[constr_it] == 0)
 							{
-								if (params.constr_names[constr_it] == "drvuln")
-									consts[constr_it] = -1.0*abs(constr_junk - params.constr_values[constr_it])/10000.0;
+								if (inp->params.constr_names[constr_it] == "drvuln")
+									consts[constr_it] = -1.0*abs(constr_junk - inp->params.constr_values[constr_it])/10000.0;
 								else
-									consts[constr_it] = -1.0*abs(constr_junk - params.constr_values[constr_it]);
+									consts[constr_it] = -1.0*abs(constr_junk - inp->params.constr_values[constr_it]);
 							}
 							else
-								consts[constr_it] = -1.0*abs((constr_junk - params.constr_values[constr_it])/params.constr_values[constr_it]);
+								consts[constr_it] = -1.0*abs((constr_junk - inp->params.constr_values[constr_it])/inp->params.constr_values[constr_it]);
 						}
 					}
 
@@ -2337,31 +2331,31 @@ void Simulation::calc_LRGV(double* vars, double* objs, double* consts, string ca
 			}
 		}
 
-		if (params.results_flag)
+		if (inp->params.results_flag)
 		{
-			results_stream << getDelim << drtranscost;
-			results_stream << getDelim << g.vulnerability << getDelim << g.failure_periods << getDelim << g.total_periods;
+			inp->results_stream << inp->params.delim << drtranscost;
+			inp->results_stream << inp->params.delim << inp->g.vulnerability << inp->params.delim << inp->g.failure_periods << inp->params.delim << inp->g.total_periods;
 			double temp_demand, temp_water;
 			for (int month_it = 0; month_it < 12; month_it++)
 			{
-				results_stream << getDelim << monthly_tracker[month_it].av_water[0][0];
-				results_stream << getDelim << monthly_tracker[month_it].Nr[0][0];
-				results_stream << getDelim << monthly_tracker[month_it].total_monthly_leases[0][0];
-				results_stream << getDelim << samples[month_it].demand[0];
-				temp_demand = samples[month_it].demand[0];
-				temp_water = monthly_tracker[month_it].av_water[0][0];
-				results_stream << getDelim << temp_demand - temp_water;
+				inp->results_stream << inp->params.delim << inp->monthly_tracker[month_it].av_water[0][0];
+				inp->results_stream << inp->params.delim << inp->monthly_tracker[month_it].Nr[0][0];
+				inp->results_stream << inp->params.delim << inp->monthly_tracker[month_it].total_monthly_leases[0][0];
+				inp->results_stream << inp->params.delim << inp->samples[month_it].demand[0];
+				temp_demand = inp->samples[month_it].demand[0];
+				temp_water = inp->monthly_tracker[month_it].av_water[0][0];
+				inp->results_stream << inp->params.delim << temp_demand - temp_water;
 			}
-			results_stream << getDelim << sims_years_tracker.No[0][0];
-			results_stream << getDelim << sims_years_tracker.total_Nx_tracker[0][0];
-			results_stream << endl;
+			inp->results_stream << inp->params.delim << inp->sims_years_tracker.No[0][0];
+			inp->results_stream << inp->params.delim << inp->sims_years_tracker.total_Nx_tracker[0][0];
+			inp->results_stream << endl;
 		}
 	}
 
 	/* Finalize Roulette Calculations */
-	if (params.roulette_flag)
+	if (inp->params.roulette_flag)
 	{
 		//deallocate memory
-		finalize_roulette();
+	    inp->finalize_roulette();
 	}
 }

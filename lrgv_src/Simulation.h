@@ -19,6 +19,8 @@ along with the LRGV.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef Simulation_h
 #define Simulation_h
 
+class Input;
+
 class Simulation{
 private:
 	int initial_call;
@@ -91,10 +93,9 @@ private:
 public:
 	Simulation();
 	~Simulation();
-	void calc_LRGV(double* vars, double* objs, double* consts, string calc_param);
+	void calc_LRGV(double* vars, double* objs, double* consts, string calc_param, Input* inp);
 	//void setInitialCall(int val);
 };
 
-extern Simulation simulator;
 
 #endif
