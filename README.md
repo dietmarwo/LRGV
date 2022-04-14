@@ -10,6 +10,7 @@ The code is refactored to avoid global variables since these don't work in conne
 with Python Multiprocessing. Using parallel execution about 150 simulations per second
 can be performed on a 16 core AMD 5950x utilizing 32 parallel threads. 
 
+
 from scipy.optimize import Bounds
 import ctypes as ct
 import numpy as np
